@@ -1,0 +1,1 @@
+ALTER TABLE public.user_achievements ADD COLUMN IF NOT EXISTS hidden_from_user boolean NOT NULL DEFAULT false;

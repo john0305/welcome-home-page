@@ -1,0 +1,1 @@
+ALTER VIEW public.v_optimization_performance SET (security_invoker = true);

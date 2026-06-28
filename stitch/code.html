@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RadarIQ - Your Listings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400..800&amp;family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Public+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1A6B5A',
+                        },
+                        secondary: {
+                            DEFAULT: '#D97B45',
+                        },
+                        tertiary: {
+                            DEFAULT: '#7C5CBF',
+                        },
+                        surface: {
+                            DEFAULT: '#FAF9F6',
+                            card: '#FFFFFF',
+                            alt: '#F3F1EE'
+                        },
+                        text: {
+                            main: '#1C1917',
+                            body: '#44403C',
+                            muted: '#78716C'
+                        },
+                        grade: {
+                            A: '#10b981', // emerald-500
+                            B: '#14b8a6', // teal-500
+                            C: '#f59e0b', // amber-500
+                            D: '#f43f5e', // rose-500
+                            F: '#ef4444'  // red-500
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Bricolage Grotesque", "sans-serif"],
+                        "display": ["Public Sans", "sans-serif"],
+                        "body": ["Plus Jakarta Sans", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .animate-pulse-glow {
+            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(26, 107, 90, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(26, 107, 90, 0); }
+        }
+    </style>
+</head>
+<body class="bg-[#FAF9F6] text-text-main font-body min-h-screen">
+<!-- SideNavBar -->
+<nav class="w-[240px] h-screen fixed left-0 top-0 bg-[#FAF9F6] dark:bg-[#1C1917] border-r border-[#F3F1EE] dark:border-[#44403C] flat no shadows flex flex-col h-full py-6 z-20 hidden md:flex">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold font-headline">R</div>
+<div class="flex flex-col">
+<span class="font-headline text-2xl font-bold text-[#1A6B5A]">RadarIQ</span>
+<span class="text-xs text-text-muted font-label">Shop Optimization</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 px-4 flex-grow">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#78716C] hover:text-[#1A6B5A] hover:bg-[#F3F1EE] transition-colors font-label font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#1A6B5A] font-bold bg-[#FAF9F6] border-l-4 border-[#1A6B5A] hover:bg-[#F3F1EE] transition-colors font-label text-sm Active: scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+                Listings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#78716C] hover:text-[#1A6B5A] hover:bg-[#F3F1EE] transition-colors font-label font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">insights</span>
+                Intelligence
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#78716C] hover:text-[#1A6B5A] hover:bg-[#F3F1EE] transition-colors font-label font-medium text-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">leaderboard</span>
+                Performance
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#78716C] hover:text-[#1A6B5A] hover:bg-[#F3F1EE] transition-colors font-label font-medium text-sm group" href="#">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 0;">smart_toy</span>
+                Radar AI
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#78716C] hover:text-[#1A6B5A] hover:bg-[#F3F1EE] transition-colors font-label font-medium text-sm mt-auto" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+                Settings
+            </a>
+</div>
+<div class="px-4 mt-4">
+<button class="w-full py-3 px-4 bg-primary text-white rounded-xl font-label font-medium text-sm flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+                Chat with Radar
+            </button>
+</div>
+<div class="px-4 mt-6 pt-4 border-t border-[#F3F1EE]">
+<button class="flex items-center gap-3 w-full px-4 py-2 hover:bg-[#F3F1EE] rounded-lg transition-colors text-left">
+<span class="material-symbols-outlined text-text-muted">account_circle</span>
+<span class="font-label text-sm text-text-body font-medium truncate">MoonPetal Studio</span>
+</button>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="h-16 fixed top-0 right-0 left-0 md:left-[240px] bg-white dark:bg-[#1C1917] border-b border-[#F3F1EE] dark:border-[#44403C] shadow-sm flex justify-between items-center px-8 z-10 duration-200 ease-in-out">
+<div class="flex items-center md:hidden gap-4">
+<div class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold font-headline">R</div>
+<span class="font-headline text-lg font-semibold text-[#1A6B5A]">RadarIQ</span>
+</div>
+<div class="hidden md:flex"></div>
+<div class="flex items-center gap-4">
+<button class="text-[#78716C] hover:text-[#1A6B5A] transition-colors p-2 rounded-full hover:bg-surface-alt">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-[#78716C] hover:text-[#1A6B5A] transition-colors p-2 rounded-full hover:bg-surface-alt">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-24 pb-20 md:pb-12 px-6 md:px-12 ml-0 md:ml-[240px] max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="bg-surface-card rounded-xl p-6 md:p-8 shadow-sm border border-surface-alt mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<h1 class="font-headline text-[28px] font-bold text-text-main mb-1">Your Listings</h1>
+<p class="font-body text-text-muted text-sm">47 active listings · Last synced 2 min ago</p>
+</div>
+<div class="flex flex-wrap gap-3 w-full md:w-auto">
+<button class="px-5 py-2.5 rounded-xl border-2 border-primary text-primary font-label font-semibold text-sm hover:bg-primary/5 transition-colors flex-1 md:flex-none text-center">
+                    Sync Etsy
+                </button>
+<button class="px-6 py-2.5 rounded-full bg-primary text-white font-label font-semibold text-sm hover:bg-opacity-90 transition-colors animate-pulse-glow flex items-center justify-center gap-2 flex-1 md:flex-none">
+<span>✨</span> Optimize All
+                </button>
+</div>
+</div>
+<!-- Filter Row -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+<div class="relative w-full lg:w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-white border border-surface-alt rounded-lg font-body text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search listings..." type="text"/>
+</div>
+<div class="flex flex-wrap items-center gap-2 flex-1 w-full lg:w-auto">
+<button class="px-4 py-1.5 rounded-full bg-text-main text-white font-label text-xs font-medium">All</button>
+<button class="px-4 py-1.5 rounded-full bg-white border border-surface-alt text-text-body font-label text-xs font-medium hover:bg-surface-alt transition-colors">Needs Work</button>
+<button class="px-4 py-1.5 rounded-full bg-white border border-surface-alt text-text-body font-label text-xs font-medium hover:bg-surface-alt transition-colors">Grades A-D/F</button>
+<button class="px-4 py-1.5 rounded-full bg-white border border-surface-alt text-text-body font-label text-xs font-medium hover:bg-surface-alt transition-colors">Ungraded</button>
+</div>
+<div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+<div class="relative">
+<select class="appearance-none bg-white border border-surface-alt rounded-lg px-4 py-2.5 pr-10 font-label text-sm text-text-body focus:outline-none focus:border-primary cursor-pointer">
+<option>Sort by: Lowest Grade</option>
+<option>Sort by: Highest Grade</option>
+<option>Sort by: Views</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
+</div>
+<div class="flex bg-white rounded-lg border border-surface-alt p-1">
+<button class="p-1.5 bg-surface-alt text-text-main rounded-md">
+<span class="material-symbols-outlined text-[20px]">grid_view</span>
+</button>
+<button class="p-1.5 text-text-muted hover:text-text-main rounded-md transition-colors">
+<span class="material-symbols-outlined text-[20px]">view_list</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Listing Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+<!-- Card 1 -->
+<div class="bg-white rounded-xl shadow-soft border border-surface-alt overflow-hidden flex flex-col group">
+<div class="relative aspect-square w-full">
+<div class="w-full h-full bg-cover bg-center" data-alt="Boho Macrame Wall Hanging - Large Fiber Art, minimalist woven wall decor, natural cream cotton cord on wood, soft lighting, professional product photography for Etsy, set in a bright modern room with warm light mode aesthetics, crisp and inviting." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAqKRXWlgOe0cBtimnJDBxMc1MIO6pSHGUoFvsOFcq6bJLSat6nGEqPnqHkGCn1__KWZ6DGpvsw94yIkawuxPR6XOKvFeIap_VQ-JyAH4ZZNFCTJUJWrz3XyRF5I-CAcxKDmJAVAYI6yJMklv9UNGye1vXok88OYGeXJ0wich5eg_7wbkphR8CHrpCE7xNbu-rQxuzx5ddDjSNltNv7oOgumQcXtaQJLAGkZqjK0mUTiX2qmNuUIFQ9XuxSq3uW_KnAgQLqjk8-hSY')"></div>
+<div class="absolute top-3 right-3 bg-grade-D text-white font-headline font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 border-white">D</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<div class="flex justify-between items-start gap-2 mb-3">
+<h3 class="font-body font-semibold text-text-main leading-snug line-clamp-2 text-[15px]">Boho Macrame Wall Hanging - Large Fiber Art</h3>
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex gap-4 mb-4 font-label text-xs text-text-muted">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 892</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 34</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-red-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">error</span> Title too short
+                        </span>
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Missing tags
+                        </span>
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Image alt
+                        </span>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-alt flex gap-3">
+<button class="flex-1 bg-primary text-white py-2 rounded-xl font-label font-medium text-sm hover:bg-opacity-90 transition-colors">Optimize</button>
+<button class="p-2 border border-surface-alt rounded-xl text-text-muted hover:bg-surface-alt transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white rounded-xl shadow-soft border border-surface-alt overflow-hidden flex flex-col group">
+<div class="relative aspect-square w-full">
+<div class="w-full h-full bg-cover bg-center" data-alt="Crystal Healing Set with Amethyst &amp; Rose Quartz, raw tumbled stones on a wooden tray, mystical and clean aesthetic, professional product photography for Etsy, set in a bright serene environment highlighting natural textures and warm pastel tones." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD0P86lxHFI4vb6hku3SytxHMu7bqYJSnEi-w41JSqOvL4JVIL2_PCkf01kyYRQcPW5cTCMNFPeqQ-rTVBj27uNvJkpZDX8nH0PLFU4LAXeEC1iZaT6JvXWHnqNZNd4WnOhFgCBhA-UKPqjIR2sPoSJpGOq8oSkiGASKsUp2ANMbNZX8ze7wFk_If-G8CVJLAOuIyZMhX2QElZ55NWhr53ljP7nQPwCv_u7NCBVQefHmREg59W1T8HHtZOLBx_QFBtv1cCbeswdd0c')"></div>
+<div class="absolute top-3 right-3 bg-grade-C text-white font-headline font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 border-white">C</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<div class="flex justify-between items-start gap-2 mb-3">
+<h3 class="font-body font-semibold text-text-main leading-snug line-clamp-2 text-[15px]">Crystal Healing Set with Amethyst &amp; Rose Quartz</h3>
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex gap-4 mb-4 font-label text-xs text-text-muted">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 445</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 28</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Keyword stuffing
+                        </span>
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Low detail desc
+                        </span>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-alt flex gap-3">
+<button class="flex-1 bg-primary text-white py-2 rounded-xl font-label font-medium text-sm hover:bg-opacity-90 transition-colors">Optimize</button>
+<button class="p-2 border border-surface-alt rounded-xl text-text-muted hover:bg-surface-alt transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white rounded-xl shadow-soft border border-surface-alt overflow-hidden flex flex-col group">
+<div class="relative aspect-square w-full">
+<div class="w-full h-full bg-cover bg-center" data-alt="Pressed Wildflower Bookmark - Dried Botanical, clear resin bookmark with colorful dried flowers, lying on an open book, soft sunlight, professional product photography for Etsy, warm aesthetic with crisp details and soft shadows." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC-5v_Jfw4XKkOFpnIOMEEJYQ9taJeogofSTHVVbh2BWq4mJO7YVcdxYpPAc30iPE_qorgiODzjSxuA-otcIsuLjk-vwZB3ZVS11lZjlk3jogM15NTHMDqr_zcj8XiczWn0HZotS-JNpdJ0EspdpCM8a80oeC4_qGvFMsGsXi0dgFJjloIsq08VcD3fRpOb9c85PwCD6gxQOAqfdV401XgDHxwLGwNNCQUEi4IXgJ5IgrN9OxpqRIgwCGgl1_QP9Iq9yjlHj_XZut8')"></div>
+<div class="absolute top-3 right-3 bg-grade-B text-white font-headline font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 border-white">B</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<div class="flex justify-between items-start gap-2 mb-3">
+<h3 class="font-body font-semibold text-text-main leading-snug line-clamp-2 text-[15px]">Pressed Wildflower Bookmark - Dried Botanical</h3>
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex gap-4 mb-4 font-label text-xs text-text-muted">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 1,203</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 67</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Competitor gap
+                        </span>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-alt flex gap-3">
+<button class="flex-1 bg-white border border-primary text-primary py-2 rounded-xl font-label font-medium text-sm hover:bg-surface-alt transition-colors">Review</button>
+<button class="p-2 border border-surface-alt rounded-xl text-text-muted hover:bg-surface-alt transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white rounded-xl shadow-soft border border-surface-alt overflow-hidden flex flex-col group relative">
+<div class="absolute -top-1 -left-1 z-10">
+<div class="bg-amber-400 text-amber-900 text-[10px] font-bold px-3 py-1 rounded-br-lg rounded-tl-lg shadow-sm flex items-center gap-1 uppercase tracking-wider">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">star</span> Top Performer
+                    </div>
+</div>
+<div class="relative aspect-square w-full">
+<div class="w-full h-full bg-cover bg-center" data-alt="Handmade Ceramic Coffee Mug - Speckled Earth Tones, rustic pottery mug with coffee, cozy aesthetic, neutral background, professional product photography for Etsy, warm comforting lighting highlighting the speckled texture and earthy colors." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAjz6AMDTndqlW7R5TdOe1ERhKwioyo6_sNFdtj8ikIP_MwWTEmuRdXNIuQY9MJdvsrBDc0y8WrXmY8qMMa-sy8b37Qs_LV2bKa_HMIrmpWy_veYOZw1wJlQHDmP0h2ztoe83rsDKjXqCV3LH1TaGzlIWBU_Sxa2Fws5TDkkkIAEKKld_n12SSpfmHOE9DhUliMMIEGq97Zc5yT9yjmdcQiMk-K_2jtTunJBgOOic_oRcqqwODYXqAmvYpFkuGFhFypadaWk0uP5i4')"></div>
+<div class="absolute top-3 right-3 bg-grade-A text-white font-headline font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 border-white">A</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<div class="flex justify-between items-start gap-2 mb-3">
+<h3 class="font-body font-semibold text-text-main leading-snug line-clamp-2 text-[15px]">Handmade Ceramic Coffee Mug - Speckled Earth Tones</h3>
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex gap-4 mb-4 font-label text-xs text-text-muted">
+<span class="flex items-center gap-1 text-primary font-medium"><span class="material-symbols-outlined text-[14px]">visibility</span> 2,891</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 143</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-emerald-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> Fully Optimized
+                        </span>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-alt flex gap-3">
+<button class="flex-1 bg-surface-alt text-text-body py-2 rounded-xl font-label font-medium text-sm hover:bg-[#e5e5e5] transition-colors">View Stats</button>
+<button class="p-2 border border-surface-alt rounded-xl text-text-muted hover:bg-surface-alt transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-white rounded-xl shadow-soft border border-surface-alt overflow-hidden flex flex-col group">
+<div class="relative aspect-square w-full">
+<div class="w-full h-full bg-cover bg-center" data-alt="Digital Download: Cottagecore Aesthetic Wallpaper Pack, aesthetic smartphone screens showing floral and vintage patterns, clean digital mockup, professional presentation for Etsy, soft bright lighting emphasizing the digital artwork." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCzMn19EOlcYfied_N9XtN_OQJQhqLRba9J2OzTZzSxKQTVWy3NeS1yqjjcriuLPPsXq9PaobaxVtTQQ7u8m1pR8zKiQEMESqNZq2btU-n-6DL4Lv8MPSCJHBEsIROaP5pTIe51Jmd8hkq2lg-PmhQLdd0Z81bRwDLS6n0J0F1ML9SYoii3zw3niaEjg0mDHg4ooZqY08XXsRS8bxs3PGcIXEKn8pFjX538-Vxe94UTkOQiCteAreBEVxZkzH5jCxOM-cEqZEpHWWY')"></div>
+<div class="absolute top-3 right-3 bg-grade-C text-white font-headline font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 border-white">C</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<div class="flex justify-between items-start gap-2 mb-3">
+<h3 class="font-body font-semibold text-text-main leading-snug line-clamp-2 text-[15px]">Digital Download: Cottagecore Aesthetic Wallpaper Pack</h3>
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex gap-4 mb-4 font-label text-xs text-text-muted">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 334</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 19</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Missing category
+                        </span>
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Title format
+                        </span>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-alt flex gap-3">
+<button class="flex-1 bg-primary text-white py-2 rounded-xl font-label font-medium text-sm hover:bg-opacity-90 transition-colors">Optimize</button>
+<button class="p-2 border border-surface-alt rounded-xl text-text-muted hover:bg-surface-alt transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-white rounded-xl shadow-soft border border-surface-alt overflow-hidden flex flex-col group">
+<div class="relative aspect-square w-full">
+<div class="w-full h-full bg-cover bg-center" data-alt="Personalized Leather Journal - Custom Initial, dark brown leather notebook with embossed monogram, vintage pen next to it, professional product photography for Etsy, rich dark tones contrasting with a warm well-lit surface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCAWDlvrRS-_Lm3NCavQ8N8Qp2-r4s6TLuYDiWRx_BhpjN9Xvcfyp4pPqs-vFf8b9FB_59dKT3LKeDM1FF-fVqa9DzVfXmFbujDwz8sPTKR-dCQb3SBFO6YHl_wsAhyrbG5f-D3G3Mq-A0rjSMpvYypHsACTeh3AziWhajZEFt5pW6_Rk7EOD-EP6IteUHXfdedmG0kBI7fFbtVikzpjG-2vWmw0l7aIyyP4G9MSG-YapLgW4IiLo4x0X7T6AHWR-kpL110AMnZYPo')"></div>
+<div class="absolute top-3 right-3 bg-grade-B text-white font-headline font-bold text-lg w-10 h-10 rounded-full flex items-center justify-center shadow-sm border-2 border-white">B+</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<div class="flex justify-between items-start gap-2 mb-3">
+<h3 class="font-body font-semibold text-text-main leading-snug line-clamp-2 text-[15px]">Personalized Leather Journal - Custom Initial</h3>
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex gap-4 mb-4 font-label text-xs text-text-muted">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> 678</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 41</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-5">
+<span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-label text-[11px] font-medium border border-amber-100 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Add material tags
+                        </span>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-alt flex gap-3">
+<button class="flex-1 bg-white border border-primary text-primary py-2 rounded-xl font-label font-medium text-sm hover:bg-surface-alt transition-colors">Review</button>
+<button class="p-2 border border-surface-alt rounded-xl text-text-muted hover:bg-surface-alt transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="flex flex-col items-center justify-center gap-4 border-t border-surface-alt pt-8 pb-4">
+<p class="font-label text-sm text-text-muted">Showing 6 of 47 listings</p>
+<div class="w-64 h-1.5 bg-surface-alt rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[15%] rounded-full"></div>
+</div>
+<button class="mt-2 px-6 py-2.5 bg-white border border-surface-alt text-text-body font-label font-medium rounded-full shadow-sm hover:bg-surface-alt transition-colors">
+                Load More
+            </button>
+</div>
+</main>
+<!-- FAB Radar AI -->
+<button class="fixed bottom-6 right-6 w-14 h-14 bg-tertiary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-opacity-90 transition-transform hover:scale-105 z-50 animate-bounce" style="animation-duration: 3s;">
+<span class="material-symbols-outlined text-2xl">auto_awesome</span>
+</button>
+</body></html>

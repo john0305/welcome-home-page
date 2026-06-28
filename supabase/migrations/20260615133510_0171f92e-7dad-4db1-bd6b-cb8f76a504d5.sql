@@ -1,0 +1,6 @@
+UPDATE public.store_personalization
+SET custom_prompt_override = custom_prompt_override || E'\n\nIMPORTANT FRAMING for the Shop values block above: These phrases describe the SHOP''S general practice and brand identity — they are NOT verified facts about this specific item''s individual history. When incorporating shop-values phrasing into THE STORY section, frame it as shop-wide practice or general collection framing (e.g. "as with pieces in our collection, sustainably sourced and carefully curated" or "part of our curated collection of sustainably-sourced vintage finds") rather than stating it as a specific claim about THIS item''s individual provenance. Do NOT write "this piece was sourced from an estate sale" (or any similar item-specific provenance claim) unless the seller''s own listing text explicitly says so for this specific item.'
+WHERE user_id = 'bcc1fd79-9003-401e-8f13-461d429dc6f8'
+  AND custom_prompt_override IS NOT NULL
+  AND custom_prompt_override LIKE '%Shop values%'
+  AND custom_prompt_override NOT LIKE '%IMPORTANT FRAMING for the Shop values block%';

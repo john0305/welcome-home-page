@@ -1,0 +1,11 @@
+# RadarIQ
+
+> RadarIQ helps Etsy sellers grade, optimize, and improve their listings using AI-powered insights — connect your shop and start improving today.
+
+RadarIQ is an AI-powered SaaS that scores Etsy listings on title, tags, description, photos, and materials, then suggests selective or full optimizations sellers can review, edit, and push back to Etsy.
+
+## Pages
+
+- [Home](/): Product overview, features, and waitlist signup.
+- [Privacy Policy](/privacy): How RadarIQ handles user and shop data.
+- [Terms of Service](/terms): Terms governing use of RadarIQ.

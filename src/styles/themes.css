@@ -1,0 +1,155 @@
+/* RadarIQ landing page theme tokens.
+   Each [data-theme="..."] selector defines a full set of design tokens.
+   Tokens are applied via CSS custom properties so no inline styles are needed. */
+
+:root {
+  --riq-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="radar-amber"] {
+  --riq-bg: #0D0D0D;
+  --riq-surface: #1A1A2E;
+  --riq-card: #1E1E30;
+  --riq-accent: #C8A97E;
+  --riq-accent-dim: #7A6040;
+  --riq-text: #F5F0E8;
+  --riq-muted: #9A9490;
+  --riq-border: rgba(200, 169, 126, 0.15);
+  --riq-font-display: 'Playfair Display', Georgia, serif;
+  --riq-font-body: 'Inter', system-ui, sans-serif;
+  --riq-display-weight: 900;
+  --riq-display-tracking: -0.02em;
+  --riq-hero-size: clamp(42px, 7vw, 88px);
+  --riq-section-size: clamp(28px, 4vw, 48px);
+  --riq-radius-btn: 0px;
+  --riq-radius-card: 0px;
+}
+
+[data-theme="midnight-teal"] {
+  --riq-bg: #060E0E;
+  --riq-surface: #0A1F1F;
+  --riq-card: #0E2828;
+  --riq-accent: #2DD4BF;
+  --riq-accent-dim: #1A7A6E;
+  --riq-text: #E8FAFA;
+  --riq-muted: #6AADA8;
+  --riq-border: rgba(45, 212, 191, 0.18);
+  --riq-font-display: 'Inter', system-ui, sans-serif;
+  --riq-font-body: 'Inter', system-ui, sans-serif;
+  --riq-display-weight: 300;
+  --riq-display-tracking: 0.06em;
+  --riq-hero-size: clamp(36px, 6vw, 72px);
+  --riq-section-size: clamp(24px, 3.5vw, 40px);
+  --riq-radius-btn: 999px;
+  --riq-radius-card: 16px;
+}
+
+[data-theme="crimson-dark"] {
+  --riq-bg: #0A0505;
+  --riq-surface: #180A0A;
+  --riq-card: #200E0E;
+  --riq-accent: #E05252;
+  --riq-accent-dim: #7A2020;
+  --riq-text: #FDF2F2;
+  --riq-muted: #A07070;
+  --riq-border: rgba(224, 82, 82, 0.15);
+  --riq-font-display: 'Playfair Display', Georgia, serif;
+  --riq-font-body: 'Inter', system-ui, sans-serif;
+  --riq-display-weight: 900;
+  --riq-display-tracking: -0.04em;
+  --riq-hero-size: clamp(48px, 8vw, 104px);
+  --riq-section-size: clamp(30px, 4.5vw, 54px);
+  --riq-radius-btn: 2px;
+  --riq-radius-card: 0px;
+}
+
+[data-theme="cobalt-night"] {
+  --riq-bg: #05070F;
+  --riq-surface: #0B1028;
+  --riq-card: #0F1535;
+  --riq-accent: #6C9EFF;
+  --riq-accent-dim: #2A4A8A;
+  --riq-text: #ECF0FF;
+  --riq-muted: #7A8FC0;
+  --riq-border: rgba(108, 158, 255, 0.15);
+  --riq-font-display: 'Inter', system-ui, sans-serif;
+  --riq-font-body: 'Inter', system-ui, sans-serif;
+  --riq-display-weight: 700;
+  --riq-display-tracking: -0.01em;
+  --riq-hero-size: clamp(38px, 6.5vw, 80px);
+  --riq-section-size: clamp(26px, 3.8vw, 44px);
+  --riq-radius-btn: 6px;
+  --riq-radius-card: 8px;
+}
+
+[data-theme="forest-ink"] {
+  --riq-bg: #060A06;
+  --riq-surface: #0C160C;
+  --riq-card: #101C10;
+  --riq-accent: #7ACA85;
+  --riq-accent-dim: #3A6A40;
+  --riq-text: #EEF8EE;
+  --riq-muted: #7AAA80;
+  --riq-border: rgba(122, 202, 133, 0.15);
+  --riq-font-display: 'Playfair Display', Georgia, serif;
+  --riq-font-body: 'Inter', system-ui, sans-serif;
+  --riq-display-weight: 700;
+  --riq-display-tracking: 0em;
+  --riq-hero-size: clamp(40px, 6.5vw, 80px);
+  --riq-section-size: clamp(26px, 3.8vw, 44px);
+  --riq-radius-btn: 4px;
+  --riq-radius-card: 12px;
+}
+
+[data-theme="rose-gold"] {
+  --riq-bg: #0E080C;
+  --riq-surface: #1C1018;
+  --riq-card: #231420;
+  --riq-accent: #E8A0A8;
+  --riq-accent-dim: #8A4858;
+  --riq-text: #FDF2F4;
+  --riq-muted: #C09098;
+  --riq-border: rgba(232, 160, 168, 0.15);
+  --riq-font-display: 'Playfair Display', Georgia, serif;
+  --riq-font-body: 'Inter', system-ui, sans-serif;
+  --riq-display-weight: 700;
+  --riq-display-tracking: 0.01em;
+  --riq-hero-size: clamp(38px, 6vw, 76px);
+  --riq-section-size: clamp(26px, 3.6vw, 42px);
+  --riq-radius-btn: 999px;
+  --riq-radius-card: 16px;
+}
+
+/* ─── Landing page typography & shape language ─────────────────────────────
+   Applies the active theme's display font, weight, tracking, and radii to
+   landing-page headlines, CTAs, and cards without touching component JSX. */
+
+.riq-landing-root h1,
+.riq-landing-root h2,
+.riq-landing-root h3 {
+  font-family: var(--riq-font-display);
+  font-weight: var(--riq-display-weight);
+  letter-spacing: var(--riq-display-tracking);
+  color: var(--riq-text);
+}
+
+.riq-landing-root h1 { font-size: var(--riq-hero-size); line-height: 1.05; }
+.riq-landing-root h2 { font-size: var(--riq-section-size); line-height: 1.1; }
+
+.riq-landing-root .riq-btn-primary,
+.riq-landing-root .riq-btn-ghost,
+.riq-landing-root .riq-nav-cta {
+  border-radius: var(--riq-radius-btn) !important;
+}
+
+.riq-landing-root [class*="rounded-xl"],
+.riq-landing-root [class*="rounded-2xl"],
+.riq-landing-root [class*="rounded-lg"] {
+  border-radius: var(--riq-radius-card);
+}
+
+/* Monospace eyebrows / data tags — stable across themes */
+.riq-landing-root .riq-mono,
+.riq-landing-root [data-mono="true"] {
+  font-family: var(--riq-font-mono);
+}

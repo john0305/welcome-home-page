@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /auth/
+Disallow: /checkout/
+Disallow: /unsubscribe
+Disallow: /complete-profile
+
+Sitemap: https://radariq.app/sitemap.xml

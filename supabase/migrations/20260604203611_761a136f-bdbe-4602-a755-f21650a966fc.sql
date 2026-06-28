@@ -1,0 +1,7 @@
+
+ALTER TABLE public.stores
+  ADD COLUMN IF NOT EXISTS is_vacation BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS vacation_message TEXT,
+  ADD COLUMN IF NOT EXISTS vacation_autoreply TEXT,
+  ADD COLUMN IF NOT EXISTS currency_code TEXT,
+  ADD COLUMN IF NOT EXISTS status_synced_at TIMESTAMPTZ;

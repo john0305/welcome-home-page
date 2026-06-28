@@ -1,0 +1,25 @@
+{
+  "name": "rave-functions",
+  "version": "1.0.0",
+  "description": "RAVE Google Cloud Functions",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy:all": "npm run deploy:sync && npm run deploy:optimize && npm run deploy:grade && npm run deploy:refresh",
+    "deploy:sync": "gcloud functions deploy sync-listings --runtime nodejs20 --trigger-http --allow-unauthenticated --source ./sync-listings",
+    "deploy:optimize": "gcloud functions deploy optimize-listing --runtime nodejs20 --trigger-http --allow-unauthenticated --source ./optimize-listing",
+    "deploy:grade": "gcloud functions deploy grade-listing --runtime nodejs20 --trigger-http --allow-unauthenticated --source ./grade-listing",
+    "deploy:refresh": "gcloud functions deploy refresh-etsy-token --runtime nodejs20 --trigger-http --allow-unauthenticated --source ./refresh-etsy-token",
+    "deploy:scheduled": "gcloud functions deploy scheduled-optimization --runtime nodejs20 --trigger-topic rave-nightly-optimization --source ./scheduled-optimization"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "@google/generative-ai": "^0.3.1",
+    "axios": "^1.6.7",
+    "stripe": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "typescript": "^5.3.3"
+  }
+}

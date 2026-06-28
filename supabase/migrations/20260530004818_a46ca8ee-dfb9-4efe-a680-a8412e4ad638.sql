@@ -1,0 +1,1 @@
+UPDATE public.monthly_usage SET optimizations_used = 0, updated_at = now() WHERE user_id = 'bcc1fd79-9003-401e-8f13-461d429dc6f8' AND month = to_char(now(), 'YYYY-MM');

@@ -1,0 +1,76 @@
+project_id = "brqkcbdbsciwfmnipzbx"
+
+# Auth hook — Supabase calls this without a user JWT
+[functions.auth-email-hook]
+  verify_jwt = false
+
+# User-facing functions — JWT required
+[functions.snapshot-performance]
+  verify_jwt = true
+
+[functions.change-subscription]
+  verify_jwt = true
+
+[functions.create-checkout]
+  verify_jwt = true
+
+[functions.create-portal-session]
+  verify_jwt = true
+
+# Stripe webhooks — no user JWT; verified by Stripe signature inside the function
+[functions.payments-webhook]
+  verify_jwt = false
+
+[functions.sync-checkout-session]
+  verify_jwt = false
+
+# Cron / scheduled jobs — no user JWT; protected by CRON_SECRET header inside the function
+[functions.decay-grades]
+  verify_jwt = false
+
+[functions.sync-all-stores]
+  verify_jwt = false
+
+[functions.scheduled-optimization]
+  verify_jwt = false
+
+# Nightly grader — runs at 2:00 AM UTC
+# Triggers grader → competitor scan → shop intelligence rebuild for all active users
+[functions.nightly-action-scan]
+  schedule = "0 2 * * *"
+  verify_jwt = false
+
+# Renewal tracking — chained from sync-listings, CRON_SECRET guarded in code
+[functions.sync-renewal-detector]
+  verify_jwt = false
+
+[functions.backfill-renewal-history]
+  verify_jwt = false
+
+# Requires auth — email processing
+[functions.process-email-queue]
+  verify_jwt = true
+
+# Public form — no account needed
+[functions.join-feature-waitlist]
+  verify_jwt = false
+
+# Landing-page Echo demo — public, no JWT; rate-limited in-function by IP
+[functions.echo-demo-chat]
+  verify_jwt = false
+
+# OAuth callback — no user JWT yet at this stage
+[functions.etsy-oauth]
+  verify_jwt = false
+
+# Market intelligence — user JWT (or service role for pipeline calls)
+[functions.onboarding-pipeline]
+  verify_jwt = false
+
+# Market title suggestions — requires user JWT
+[functions.market-title-suggest]
+  verify_jwt = true
+
+# Deploy backfill — service role only, no user JWT
+[functions.deploy-backfill]
+  verify_jwt = false

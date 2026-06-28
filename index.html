@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // Canonicalize host: www.radariq.app -> radariq.app so auth/localStorage stays on one origin.
+      (function () {
+        try {
+          if (window.location.hostname === 'www.radariq.app') {
+            window.location.replace('https://radariq.app' + window.location.pathname + window.location.search + window.location.hash);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <!-- Google tag (gtag.js) -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RV65JLFM8Z"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RV65JLFM8Z');
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#14b8a6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RadarIQ" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <meta name="google-site-verification" content="p37WvvlXPNaNLgvIVr9cgj4E9dCwQ4ZKYPDkt2FwyBk" />
+    <meta name="p:domain_verify" content="f3ff27cb1af2eb516cff49633126f4c1"/>
+    <title>RADARIQ — Grade & Optimize Your Etsy Listings</title>
+    <meta name="description" content="RadarIQ helps Etsy sellers grade, optimize, and improve their own listings using AI-powered insights — connect your shop and start improving today." />
+    <meta property="og:title" content="RADARIQ — Grade & Optimize Your Etsy Listings" />
+    <meta property="og:description" content="AI-powered grading and optimization for Etsy sellers. Connect your shop and start improving today." />
+    <meta property="og:url" content="https://radariq.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RadarIQ" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "RadarIQ",
+        "url": "https://radariq.app",
+        "description": "AI-powered grading and optimization for Etsy sellers."
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "RadarIQ",
+        "url": "https://radariq.app"
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      // Apply persisted RadarIQ theme before first paint to avoid flash.
+      (function () {
+        try {
+          // Dark mode toggle (app-wide)
+          if (localStorage.getItem('radariq_theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+          // Color accent theme
+          var ct = localStorage.getItem('radariq_color_theme');
+          if (ct) document.documentElement.setAttribute('data-color-theme', ct);
+          // Landing page visual theme (--riq-* variables)
+          var valid = ['radar-amber','midnight-teal','crimson-dark','cobalt-night','forest-ink','rose-gold'];
+          var lt = localStorage.getItem('radariq_landing_theme') || 'midnight-teal';
+          if (valid.indexOf(lt) === -1) lt = 'midnight-teal';
+          document.documentElement.setAttribute('data-theme', lt);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'midnight-teal');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
