@@ -12,7 +12,6 @@ dist
 dist-ssr
 
 # Environment files — never commit live credentials
-.env
 .env.development
 .env.production
 .env.staging
