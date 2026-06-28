@@ -664,7 +664,7 @@ ${JSON.stringify(worstSorted, null, 2)}`;
       // recommend listing refreshes grounded in actual renewal cost data.
       let renewalBlock = "";
       if (activeShopId) {
-        const { data: rsum } = await supabase
+        const { data: rsum } = await admin
           .from("listing_renewal_summary")
           .select("etsy_listing_id, total_renewals, relist_renewals, total_renewal_cost_usd, is_unique_item, vacation_adjusted_days, estimated_stale_score, data_confidence")
           .eq("etsy_shop_id", activeShopId)
