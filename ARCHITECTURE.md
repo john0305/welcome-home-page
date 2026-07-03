@@ -325,5 +325,34 @@ Still open / new:
 5. Pinterest Spotlight — parked stub; if wanted, build as a `DataIntegration` provider.
 6. Photo apply-in-app (upload/reorder via Etsy API) — feasible, not built; would make photo fixes one-tap like tags/titles.
 7. Review-text mining — highest-value deferred data item (see `documents/etsy_api_data_audit.md`).
-8. Advanced-mode expansion to Intelligence/Performance panels.
-9. `ScoreClimbBanner` uses `text-white` on light backgrounds — cosmetic bug, fix in next UI touch.
+
+## 8. 2026-07-03 Visual / Mobile / A11y Pass (Opus 4.8)
+
+Scope: finish the visual identity, theme adaptation, mobile, WCAG, and AI-fallback
+verification the build pass left partial. **Finding up front:** the warm design
+system (tokens, Bricolage display font, rounded radius, warm shadows, gentle
+`cubic-bezier` motion, global 44px touch targets) was already strong — so this
+pass was targeted refinement + the missing pieces, not a risky wholesale repaint
+of screens that can't be visually verified without auth.
+
+**Verification tooling (new, in `scripts/`, kept for future passes):**
+- `contrast-audit.mjs` — pure-Node WCAG contrast math over the token palette.
+- `visual-qa.mjs` — Playwright desktop+mobile screenshots + `@axe-core` scan + 390px overflow check (run against public routes; authed screens need a logged-in session).
+- `ai-fallback-sim.mjs` — reproduces the edge-function fallback branches and asserts each failure scenario (11 assertions).
+
+**Systemic a11y/visual fixes (propagate app-wide):**
+- Grade ramp rebuilt warm + AA: `badge.tsx` grade variants were dark-theme `-400` text failing AA badly (1.49–2.28:1). Now emerald→teal→amber→clay, F = clay (never red), all 4.9–6.9:1. `getGradeColor`/`GradeDot` aligned; `muted-foreground` 47→40% L (was 4.2:1, now 5.4:1).
+- Two **light-mode CSS remaps scoped to `[data-app-shell]`** (so dark marketing pages are untouched): `text-*-400` → AA `-700` (114 legacy uses across 40+ files); low-alpha white utilities (`bg/border/hover-white` 1–10%) → warm tokens (were invisible white-on-white). Mirrors the existing dark-mode remap block in `index.css`.
+- Inline-style light-mode bugs the CSS can't reach, fixed directly: Performance MetricPill/thumbnail/hover; Login button dark-on-teal; Register waitlist h1 (invisible dark-on-dark) + WaitlistCard inputs (white-on-cream).
+
+**Features:**
+- **Simple/Advanced** now covers all four data screens: Intelligence hides Competitors/Customers/Trends/Activity tabs in Simple (with "+ More detail"); Performance hides the per-listing attribution list. Uses the existing `useViewMode` hook.
+- **Theme adaptation surfaced** (was invisible): `themeAdaptation.ts` gained `getThemeState`/`getShopMatchedTheme`/`lockTheme`/`resetToShopMatch` + full category coverage + drift-on-load; Settings→Appearance shows "Matched to your shop" and a "Match to my shop" reset, with manual pick as a permanent lock.
+
+**Verified:** all public routes 0px overflow at 390px; `/login` 0 axe violations; grade/contrast pairs pass AA via `contrast-audit.mjs`; AI fallback 11/11 via `ai-fallback-sim.mjs`.
+
+**Open / found this pass:**
+1. **Authed-screen visual QA needs the owner's eyes** — no local login means Dashboard/Listings/Intelligence/Performance/Fix-Actions/Personalize interiors were audited by code + token math, not screenshots. The systemic fixes propagate to them, but final visual sign-off is the owner's.
+2. **`grade-listing` doesn't refund a failed grade** — `consume_grade` charges `grades_used` upfront and there is no `refund_grade` RPC (the fallback comment previously overclaimed this; now corrected). Backend follow-up: add `refund_grade` mirroring `refund_optimization` and call it in the `!aiRes.ok` branch. (Fixed this pass: `ScoreClimbBanner` `text-white` and other white-alpha artifacts via the remap.)
+3. `/register` waitlist page mixes light-tuned tokens on a hardcoded dark card (2 small helper-text nodes at 3.08:1). Reconciling that semi-dark marketing page's palette is a separate task.
+4. Deferred backend items from §7.12 (competitor-scan ToS, types regen, AppContext refactor, 500+ listings, Pinterest, photo apply-in-app, review-text mining) remain as listed.
