@@ -231,7 +231,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 rounded-xl font-bold text-foreground transition-all active:scale-[0.98] disabled:opacity-60"
+              className="w-full h-11 rounded-xl font-bold text-primary-foreground transition-all active:scale-[0.98] disabled:opacity-60"
               style={{ background: "hsl(var(--primary))", boxShadow: '0 8px 24px hsl(var(--primary) / 0.3)' }}
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}

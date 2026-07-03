@@ -150,8 +150,8 @@ export default function Register() {
               Join the Beta Waitlist
             </p>
             <h1
-              className="text-2xl font-extrabold text-foreground leading-snug"
-              style={{ fontFamily: 'Bricolage Grotesque, system-ui, sans-serif' }}
+              className="text-2xl font-extrabold leading-snug"
+              style={{ fontFamily: 'Bricolage Grotesque, system-ui, sans-serif', color: '#F1F5F9' }}
             >
               RadarIQ is in active beta.
             </h1>

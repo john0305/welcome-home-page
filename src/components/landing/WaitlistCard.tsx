@@ -103,7 +103,7 @@ export function WaitlistCard({ initialEmail = '', initialFirstName = '' }: { ini
       >
         {status === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reserve My Spot →'}
       </button>
-      <p className="text-[11px] text-center" style={{ color: '#64748B' }}>
+      <p className="text-[11px] text-center" style={{ color: '#94A3B8' }}>
         No spam. No credit card. Just your spot in line.
       </p>
 
@@ -111,16 +111,17 @@ export function WaitlistCard({ initialEmail = '', initialFirstName = '' }: { ini
         .wlc-input {
           width: 100%;
           background: hsl(var(--surface-2));
-          border: 1px solid rgba(255,255,255,0.10);
+          border: 1px solid hsl(var(--border));
           border-radius: 10px;
           padding: 10px 12px;
           font-size: 13px;
-          color: #fff;
+          /* theme-aware: dark text on the light cream input (was #fff = invisible) */
+          color: hsl(var(--foreground));
           outline: none;
           transition: border-color .15s, background .15s;
           font-family: inherit;
         }
-        .wlc-input::placeholder { color: #64748B; }
+        .wlc-input::placeholder { color: hsl(var(--muted-foreground)); }
         .wlc-input:focus { border-color: ${TEAL}; background: hsl(var(--border)); }
       `}</style>
     </form>
