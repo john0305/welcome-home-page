@@ -10,6 +10,7 @@ import { ListingActionsProvider } from '@/hooks/useListingActions'
 import { BulkProgressPanel } from '@/components/listings/BulkProgressPanel'
 import { useRealNotifications } from '@/hooks/useRealNotifications'
 import { useTractionNotifications } from '@/hooks/useTractionNotifications'
+import { useProactiveInsights } from '@/hooks/useProactiveInsights'
 import { PersistentStoreHeader } from './PersistentStoreHeader'
 import { MobileTopHeader } from './MobileTopHeader'
 import { MobileBottomNav } from './MobileBottomNav'
@@ -25,6 +26,7 @@ function NotificationBridge() {
   useRealNotifications()
   useTractionNotifications()
   useScoreChangeWatcher()
+  useProactiveInsights()
   return null
 }
 

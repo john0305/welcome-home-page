@@ -37,6 +37,7 @@ import {
   shopFactors,
   type CheckResult,
 } from "../_shared/etsy-ranking-factors.ts";
+import { applyPriorityGate } from "../_shared/priority-gate.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -320,6 +321,14 @@ async function scanUser(
     failures: summary.failures,
     details: { sample: summary.details.slice(0, 50) },
   }, { onConflict: "user_id,scan_date" });
+
+  // ── Priority gate (Section 5): score everything, flag <=3/day notify-worthy ─
+  try {
+    const gate = await applyPriorityGate(supabase, userId);
+    console.log(`priority gate for ${userId}:`, gate);
+  } catch (e) {
+    console.error("priority gate failed", userId, e);
+  }
 
   // ── Extension C: resolve applied/tracking actions at 7+ days ────────────
   await resolveMaturedActions(supabase, userId);
