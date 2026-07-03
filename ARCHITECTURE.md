@@ -1,7 +1,10 @@
 # RadarIQ — Architecture
 
-> Living document. Reflects the current Supabase (Lovable Cloud) implementation, not the stale
-> Google Cloud Functions / Neo4j description in the root `README.md` (see [Known Issues](#6-known-issuestodosparked-work)).
+> Living document. Sections 1–6 map the pre-July-2026 baseline; **§7 records the
+> 2026-07 build pass** (security lockdown, shop-type detection, photo/trend
+> intelligence, priority gate, integrations, tone/UX pass, tier map, judgment
+> calls). Update §7 as work continues — this file is the onboarding/debugging
+> reference for future sessions.
 
 ## 1. Directory / Module Map
 
@@ -9,14 +12,15 @@
 src/                    React 18 + Vite + TypeScript frontend
 supabase/                Supabase (Lovable Cloud) backend
   functions/              Deno edge functions (the actual backend logic)
-  migrations/              96 SQL migrations — schema of record
+  migrations/              104 SQL migrations — schema of record
   config.toml               per-function verify_jwt + cron schedule config
-functions/               LEGACY — Google Cloud Functions, superseded by supabase/functions/. See §6.
-documents/                Planning/audit docs (audit_results.md, fix.md, prompt logs)
+documents/                Planning/audit docs (audit_results.md, fix.md, compliance + data audits)
 updates/                  Product/build specs
 lovable.md                Reference doc for the Lovable platform (accurate, current)
-README.md                 STALE — describes an earlier, abandoned architecture
 ```
+
+(Removed in 2026-07 pass: legacy root `functions/` Google Cloud Functions dir —
+verified nothing in-repo deployed it; preserved in git history.)
 
 ### `src/`
 
@@ -169,4 +173,157 @@ From `documents/audit_results.md` (2026-06-06 full system audit) and `documents/
 
 **Other notable frontend deps**: `@tanstack/react-query`, `zustand`, `react-router-dom`, `react-hook-form` + `zod`, `recharts`, `date-fns`, Radix UI + Tailwind (shadcn), `lucide-react`.
 
-No `.env.example` was found at the repo root during this investigation — worth confirming it still exists, since the audit flagged real `.env` files as committed instead of an example template.
+`.env.example` exists at the repo root (only `VITE_`-prefixed publishable values); `.env` was untracked in the 2026-07 pass.
+
+---
+
+## 7. 2026-07 Build Pass (Fable 5) — What Changed and Why
+
+Executed against `documents/RadarIQ_Fable5_Brief (1).md` in its Section 15
+order. Every subsection below is live code, not plan.
+
+### 7.1 Security / stability (Phase 1)
+
+- **`.env` untracked + gitignored** (`.env.example` kept). Credential rotation handled separately by the owner.
+- **Caller-verification audit of all 58 edge functions.** Key insight: platform `verify_jwt` also passes the PUBLIC anon key, so in-function checks are the real gate. New shared helpers in `supabase/functions/_shared/service-auth.ts` (`isServiceCall`, `isCronCall`, `callerUserId`, `isAdminCall`). Locked down (previously anon-invocable): `rebuild-shop-intelligence` + `competitor-market-scan` (service-only; they take arbitrary `user_id` and spend AI/Etsy quota), `calculate-attribution` + `platform-aggregate-stats` (admin-or-service; attribution allows self-recompute), `send-transactional-email` (service full; authed users limited to signup templates bound to their own email — was an open spam vector from RadarIQ's domain).
+- **Impersonation redesign**: `admin-impersonate` writes an `impersonation_sessions` audit row (who/whom/when/expiry) BEFORE issuing the magic link; redirect carries `?impersonation=<session_id>`; `ImpersonationBanner` (mounted in `AppLayout`) shows a persistent "Viewing as" bar, offers End Session (stamps `ended_at`), and auto-signs-out after 30 min. **Accepted limitation (judgment call)**: the underlying magic-link session is a standard Supabase session — the 30-min limit is client-enforced; hard server-side JWT revocation would need custom JWT infra. Acceptable at current user scale; revisit before real growth.
+- **Cron triggers made deterministic**: `sync-all-stores` (01:00), `decay-grades` (02:30), `scheduled-optimization` (03:00) now have native `schedule` entries in `config.toml` (previously nothing verifiably invoked them). If Lovable had external triggers configured, remove them (see handoff).
+- Legacy root `functions/` (Google Cloud) deleted after verifying no in-repo deploy path.
+
+### 7.2 Pipeline fixes (Phase 2)
+
+- **Dashboard↔Intelligence contradiction**: `TopImpactActions` filtered pending actions to `score_delta > 0`, hiding real pending work and claiming "no pending actions / great shape" while the Dashboard counted low-grade listings. Now: no hiding (unscored actions rank below scored), honest empty-state copy.
+- **Wins dedup**: `wins_feed` was plain-INSERTed on every attribution re-run, and `first_sale_wN` produced identical window-less headlines per window. Fixed with dedupe migration + unique `(attribution_id, kind)` index + upsert + once-per-listing `first_sale` guard (`20260702000002`).
+- **Dashboard consolidation**: one health score (hero ring; detail lives on ScoreRoadmap), one action queue (`EchoPicksPanel` in the main column; the near-verbatim "Your Priority Actions" duplicate removed).
+- **Pinterest Spotlight**: confirmed a **parked stub** — `pinterest_posts` is read by achievements but nothing writes it. Left as-is; see "recommended, not built".
+
+### 7.3 Black-page fix (Phase 3) — Etsy reviewer issue
+
+Root cause: empty `#root`, no `noscript`, and the default landing theme
+(midnight-teal, dark) stamped on `html` pre-paint — any environment that
+didn't execute the JS bundle painted an empty black viewport. `index.html`
+now ships a static, light-background branded fallback inside `#root`
+(React replaces it on mount) plus a descriptive `noscript` block. Verify by
+loading the site with JS disabled before resubmitting the API appeal.
+
+### 7.4 Etsy data + shop-type detection (Phases 4–5)
+
+- `sync-listings` now captures Etsy's own classification fields: `listing_type`, `who_made`, `when_made`, `is_supply`, `taxonomy_id`, `shop_section_id`, `processing_min/max`, `has_variations`, `is_personalizable` (migration `20260702000003`). Ranked audit of everything else: `documents/etsy_api_data_audit.md`.
+- **Shop-type detection is now largely deterministic** (`src/lib/shopType.ts` + server mirror `_shared/shop-type.ts` — keep in sync). Per-listing `classifyListing()` (digital / made_to_order / personalized / vintage / supplies / one_of_a_kind / inventory); `deriveShopTypeProfile()` persists type+confidence+breakdown onto `user_niche_profiles` at the end of every sync, never overwriting a seller override.
+- **Confirm/correct loop**: `ShopTypeCard` on Store Profile; every confirm/correct logs to `shop_type_corrections` (training signal); corrections set `shop_type_override`, which wins everywhere (migration `20260702000004`).
+
+### 7.5 Photo intelligence (Phase 6)
+
+`analyze-photos` rebuilt: routes through the Lovable AI Gateway (was the only
+direct-Anthropic caller), branches its grading lens by listing kind (digital →
+preview readability, never "fix your lighting"; made-to-order → variation
+coverage; vintage → condition-honesty close-ups; supplies → quantity/scale),
+classifies each photo keep/edit/retake with plain-language `action_reason` +
+`edit_guidance`, returns `recommended_order` + `reorder_reason` (explicit
+position swaps), and benchmarks photo count against niche peers from
+`competitor_snapshots` (aggregate only). `PhotoAnalysisPanel` surfaces all of it.
+Note: Etsy API v3 supports image upload/reorder (`uploadListingImage` + rank),
+so photo fixes CAN eventually be applied in-app — see "recommended, not built".
+
+### 7.6 Compliance + own-data trends (Phase 7)
+
+**Read `documents/etsy_compliance_trend_design.md` before touching anything
+market-related.** Current Etsy API Terms prohibit collecting Etsy content "for
+purposes of analytics/ML" without written authorization; **`competitor-market-scan`
+is flagged as the top risk to the pending API appeal** (owner decision:
+authorization or feature-flag off — deliberately not disabled unilaterally).
+Built compliant-by-construction from the seller's own `listing_snapshots`:
+`traction_decline` (14d-vs-prior-14d early warning) and `renewal_timing`
+("renew now vs refresh first" — the renewal-tracker upgrade) — computed in
+`nightly-action-scan` step 3.5, self-expiring, registered as `pipeline_computed`
+factors (new flag; stops the nightly re-check from superseding pipeline-created
+actions — note: market factors intentionally KEEP the nightly
+supersede-and-regenerate behavior).
+
+### 7.7 Priority gate + proactive assistant (Phase 8)
+
+`fix_actions` gains `priority_score` (0–100) + `notify_worthy` (migration
+`20260702000005`), computed by `_shared/priority-gate.ts` at the end of every
+scan: severity base + expected impact + one-tap bonus + own-data confidence,
+adjusted by 90-day per-factor outcome history (consistently-dismissed types
+−20, adopted +10 — the Section 8 learning loop reads `fix_actions` statuses
+directly: applied / edited_applied ("acted differently") / dismissed(reason) /
+stale-pending ("ignored")). Hard cap: at most 3 fresh actions/day at score ≥70
+become `notify_worthy`. Client `useProactiveInsights` surfaces ONLY
+server-flagged rows as teaser notifications (notification → conversation →
+reveal) — the gate cannot be bypassed client-side.
+
+### 7.8 Refresh timing + theme adaptation (Phase 9)
+
+- `user_profiles.activity_hours` (UTC login-hour histogram, written once per session by `AuthContext`; migration `20260702000006`).
+- `predictive-refresh` (hourly cron, :10): when a user's modal login hour is ~2h away, their last completed scan >20h old, and they have ≥5 recorded sessions → sync + single-user scan so insights land just before they show up. Fixed nightly schedule remains the safety net.
+- Event-driven: a user-triggered sync that finds real listing changes fires an immediate single-user rescan (`source: listing_change`).
+- Confidence decay: pending actions are re-verified every nightly scan (≤24h, well inside the brief's 5-day bar) and the notify gate only flags <24h-old findings — satisfied by design, documented rather than rebuilt.
+- Theme adaptation (skin-deep only): `src/lib/themeAdaptation.ts` maps confirmed `store_personalization.category` → one of the four existing color themes. Manual Settings pick (`radariq_color_theme`) is a permanent lock; auto writes `radariq_color_theme_auto`; the pre-paint script prefers manual.
+
+### 7.9 Data integrations (Phase 10)
+
+Contract in `_shared/data-integrations.ts` (`DataIntegration`: buildAuthUrl /
+exchangeCode / refreshToken / fetchMetrics / mapToInsights + registry). Adding
+a provider = implement + register; no new endpoints. GA4 connector is live
+code: OAuth (offline), property auto-discovery, 28d runReport, etsy/social
+referral rollups; social spike/collapse → `external_traffic_signal` inform
+actions in the SAME `fix_actions` queue. Storage: `integration_connections`
+(tokens server-only via column grants) + `integration_metrics` (migration
+`20260702000007`). Functions: `integration-oauth` (generic authorize/callback,
+reuses `oauth_states.provider`), `sync-integration-data` (daily cron 01:30).
+**Needs `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` secrets** (see
+handoff). Second integration verified unavailable: eRank/EverBee/Sale
+Samurai/Alura expose no public developer APIs.
+
+### 7.10 Tone, fallbacks, UX (Phases 11–12)
+
+- **Tone (7a)**: the brief's worked example rewritten at its source (`onboarding-pipeline` title rationale) + the same clinical copy in `useShopMarketOverview` / `GuidedFixFlow`; `ScoreFactorRows` "Fair"/"Poor" → "Getting there"/"Big upside here". Dashboard hero already softened F/D ("Just Starting"/"Building Up").
+- **AI fallbacks (12a)**: `grade-listing` returns the last computed grade marked `stale: true` + notice on gateway failure (never blank/error when a prior grade exists); `rewrite-listing`, `create-optimized-listing`, `analyze-photos` refund the reserved credit via new `refund_optimization` RPC (migration `20260702000008`) and say so plainly (`optimize-listing` already refunded); Echo chat already failed friendly.
+- **Insight-led Listings** (user feedback: "we promise intelligence, then the next click is a table"): `ListingsInsightHeader` ("Echo's read" — warm synthesis + tappable opportunity chips driving the existing tab filters) leads the page; the dense filter zone collapses behind "Fine-tune filters" in simple mode.
+- **Two-mode system (Section 7)**: `useViewMode` (`simple` default / `advanced`; persisted, broadcast). Toggle in Settings → Appearance ("Detail level"). Currently applied to Listings' filter machinery; extend to Intelligence/Performance advanced panels as a follow-up.
+- **Assistant identity = Echo** (Section 13 conflict resolved): Echo is the marketed brand (landing "Meet Echo", pricing "Echo Lite/…", public demo). Renamed the Dashboard "Radar's Insight" box → "Echo's Insight" + all "Radar is …" persona copy → Echo. Code identifiers (`echo-chat`, `components/echo/`) intentionally unchanged. Future mascot can be Echo-the-radar-creature; no conflict.
+
+### 7.11 Tier map (holistic pass — Section 2)
+
+Tiers in code: `free | starter | pro` (`src/lib/tier-access.ts`; billing also
+knows `agency`). Principle applied: **advice correctness is never gated** (a
+free seller must never get wrong advice because of their tier); depth,
+frequency, and integrations are the honest paid step-ups.
+
+| Feature (this pass) | Tier | Reasoning |
+|---|---|---|
+| Shop-type detection + confirm/correct | All | Gating would make free users' advice *wrong*, not just shallower. |
+| Type-branched photo lens, retake/edit/reorder, benchmark | All tiers via existing optimization-credit gate (free: 5/mo) | Heavy AI cost is already metered by credits; no second gate. |
+| `traction_decline` / `renewal_timing` insights | All | Own-data, cheap, core "assistant" value — this is what makes Free feel respected. |
+| Priority gate + proactive notifications | All | Trust/noise-control feature; gating it would make lower tiers noisier, i.e. worse. |
+| Predictive + event-driven refresh | All | Cheap; self-limits via session-count threshold. |
+| Theme adaptation, Simple/Advanced mode | All | Cosmetic/ergonomic. |
+| Data integrations (GA4+) | **Pro** (`data_integrations` feature; enforced client + server in `integration-oauth`) | "More integrations" is the honest upgrade named in the strategy; core Etsy insights stay free. |
+| Stale-grade fallback, credit refunds | All | Fairness features by definition. |
+
+Pre-existing gates (unchanged): listings visibility (1/5/all), market-score
+depth, tag-gap depth, competitor detail, score history window, guided fixes,
+Echo memory + message caps, grade cap (free 50/mo), optimization credits.
+Dark-pattern check: no insight is teased-but-hidden; count-only gates
+(`tag_gap_count_only`, `competitor_count_only`) are the closest case —
+acceptable because the count is itself honest information, but flagged for
+review if sellers report it feeling baity.
+
+### 7.12 Known issues / recommended-but-not-built (current)
+
+Resolved from the old §5 list: `.env` tracking ✅, function auth ✅, cron
+triggers ✅, README ✅ (rewritten), legacy `functions/` ✅ (removed),
+Dashboard/Intelligence contradiction ✅, wins dedup ✅, health-score/actions
+duplication ✅, naming collision ✅.
+
+Still open / new:
+1. **Etsy ToS vs competitor scanning** — owner decision required (§7.6). Highest priority before appeal resubmission.
+2. **Generated `types.ts` lags new migrations** — code uses the repo's `(supabase as any)` pattern in 4 spots (`ShopTypeCard`, `useProactiveInsights`, `AuthContext` histogram, `IntegrationsCard`); remove casts after Lovable regenerates types.
+3. `AppContext.tsx` remains a sprawling data layer (React Query underused) — deliberate deferral; refactor is high-churn, low-user-visible-value at current scale.
+4. 500+ listing performance concerns — unaddressed this pass (no shop that size yet); `usePendingFixActions` caps at 1000 rows.
+5. Pinterest Spotlight — parked stub; if wanted, build as a `DataIntegration` provider.
+6. Photo apply-in-app (upload/reorder via Etsy API) — feasible, not built; would make photo fixes one-tap like tags/titles.
+7. Review-text mining — highest-value deferred data item (see `documents/etsy_api_data_audit.md`).
+8. Advanced-mode expansion to Intelligence/Performance panels.
+9. `ScoreClimbBanner` uses `text-white` on light backgrounds — cosmetic bug, fix in next UI touch.
