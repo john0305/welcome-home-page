@@ -174,6 +174,25 @@ html.dark .border-red-200, html.dark .border-red-300 { border-color: rgba(239,68
 html.dark .border-orange-200, html.dark .border-orange-300 { border-color: rgba(249,115,22,0.25); }
 html.dark .border-violet-200, html.dark .border-violet-300 { border-color: rgba(139,92,246,0.25); }
 
+/* ── In-app light-mode legibility remap ───────────────────────────────────
+   Many components use Tailwind `-400` text weights that were tuned for the
+   original dark theme; on the warm light surface they fail WCAG AA (measured
+   ~1.5–3:1). Remap them to AA-passing `-700` weights, but ONLY inside the
+   authenticated app shell ([data-app-shell]) and ONLY in light mode — the
+   marketing/landing pages intentionally use `-400` on dark backgrounds and
+   must keep them. Dark app mode keeps `-400` (correct on dark surfaces). */
+html:not(.dark) [data-app-shell] .text-emerald-400 { color: #047857; }
+html:not(.dark) [data-app-shell] .text-green-400   { color: #15803d; }
+html:not(.dark) [data-app-shell] .text-teal-400    { color: #0f766e; }
+html:not(.dark) [data-app-shell] .text-amber-400   { color: #b45309; }
+html:not(.dark) [data-app-shell] .text-yellow-400  { color: #a16207; }
+html:not(.dark) [data-app-shell] .text-orange-400  { color: #c2410c; }
+html:not(.dark) [data-app-shell] .text-red-400     { color: #b91c1c; }
+html:not(.dark) [data-app-shell] .text-rose-400    { color: #be123c; }
+html:not(.dark) [data-app-shell] .text-blue-400    { color: #1d4ed8; }
+html:not(.dark) [data-app-shell] .text-violet-400  { color: #6d28d9; }
+html:not(.dark) [data-app-shell] .text-purple-400  { color: #7e22ce; }
+
 /* ── Color accent themes ────────────────────────────────────────────────── */
 :root,
 :root[data-color-theme="forest"] {

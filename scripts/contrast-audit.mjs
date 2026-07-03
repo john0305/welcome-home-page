@@ -97,3 +97,18 @@ for (const [n,b] of [['page bg','36 33% 97%'],['card','0 0% 100%'],['surface-2',
   const r = ratio(mutedNew, hslToRgb(...b.split(' ').map(parseFloat)))
   console.log(`  ${r>=4.5?'PASS':'FAIL'}  ${r.toFixed(2)}:1  muted on ${n}`)
 }
+
+// ── -400 → -700 light-mode remap targets (on page bg + their -50 tint) ──
+const bgPage = hslToRgb(36,33,97)
+const remap = {
+  emerald:['#047857','#ecfdf5'], green:['#15803d','#f0fdf4'], amber:['#b45309','#fffbeb'],
+  orange:['#c2410c','#fff7ed'], red:['#b91c1c','#fef2f2'], blue:['#1d4ed8','#eff6ff'],
+  violet:['#6d28d9','#f5f3ff'], teal:['#0f766e','#f0fdfa'], rose:['#be123c','#fff1f2'],
+  yellow:['#a16207','#fefce8'],
+}
+console.log('\n── -400→-700 remap: text on page bg / on own -50 tint ──')
+for (const [c,[t,tint]] of Object.entries(remap)) {
+  const onBg = ratio(hexToRgb(t), bgPage)
+  const onTint = ratio(hexToRgb(t), hexToRgb(tint))
+  console.log(`  ${onBg>=4.5&&onTint>=4.5?'PASS':'WARN'}  ${c}-700  onBg ${onBg.toFixed(2)}  onTint ${onTint.toFixed(2)}`)
+}

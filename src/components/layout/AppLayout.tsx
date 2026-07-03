@@ -71,7 +71,7 @@ export function AppLayout() {
     <NotificationBridge />
     <OnboardingRedirects />
     <MorningSummaryToast />
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div data-app-shell className="flex h-screen flex-col overflow-hidden bg-background">
     <ImpersonationBanner />
     <div className="flex flex-1 overflow-hidden">
       <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
