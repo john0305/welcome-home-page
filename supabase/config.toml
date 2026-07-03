@@ -46,6 +46,12 @@ project_id = "brqkcbdbsciwfmnipzbx"
   schedule = "0 2 * * *"
   verify_jwt = false
 
+# Predictive insight refresh — hourly; pre-warms single-user scans ~2h before
+# each user's usual login window (no-op unless their modal hour matches)
+[functions.predictive-refresh]
+  schedule = "10 * * * *"
+  verify_jwt = false
+
 # Renewal tracking — chained from sync-listings, CRON_SECRET guarded in code
 [functions.sync-renewal-detector]
   verify_jwt = false

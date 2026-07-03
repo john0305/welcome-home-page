@@ -551,6 +551,7 @@ Deno.serve(async (req) => {
     }
     const etsyUpdatedMaxIso = etsyUpdatedMaxMs ? new Date(etsyUpdatedMaxMs * 1000).toISOString() : null;
 
+    let listingsChanged = false;
     if (limitRowId) {
       const { data: prev } = await supabase
         .from("sync_rate_limits")
@@ -562,6 +563,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       const prevMax = (prev as { etsy_updated_max?: string | null } | null)?.etsy_updated_max ?? null;
       const isNoChange = !!etsyUpdatedMaxIso && !!prevMax && etsyUpdatedMaxIso <= prevMax;
+      listingsChanged = !isNoChange;
       await supabase
         .from("sync_rate_limits")
         .update({
@@ -569,6 +571,30 @@ Deno.serve(async (req) => {
           etsy_updated_max: etsyUpdatedMaxIso,
         })
         .eq("id", limitRowId);
+    }
+
+    // Event-driven refresh (Section 6): a user-triggered sync that found real
+    // listing changes re-runs that user's action scan right away, so insights
+    // react to edits instead of waiting for the next nightly. Cron-sourced
+    // syncs skip this — the 2:00 scan follows them anyway.
+    if (listingsChanged && req.headers.get("x-sync-source") !== "cron") {
+      try {
+        const rescanPromise = fetch(`${SUPABASE_URL}/functions/v1/nightly-action-scan`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SERVICE_KEY}`,
+          },
+          body: JSON.stringify({ user_id: userId, source: "listing_change" }),
+        }).catch((e) => console.error("event-driven rescan failed", e));
+        // @ts-ignore EdgeRuntime is available in Supabase edge runtime
+        if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+          // @ts-ignore
+          EdgeRuntime.waitUntil(rescanPromise);
+        }
+      } catch (e) {
+        console.error("event-driven rescan setup failed", e);
+      }
     }
 
     // Recompute the shop-type profile from freshly synced classification

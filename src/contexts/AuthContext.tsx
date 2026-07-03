@@ -406,6 +406,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     document.addEventListener('visibilitychange', ping)
     window.addEventListener('focus', ping)
 
+    // Once per session: bump this UTC hour in the login-hour histogram that
+    // predictive-refresh uses to pre-warm insights before the user's usual
+    // login window (Section 6). Read-modify-write is fine at one session at
+    // a time per user.
+    void (async () => {
+      try {
+        // activity_hours lands in generated types with migration
+        // 20260702000006; untyped-client pattern until then.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabase as any
+        const { data } = await db
+          .from('user_profiles')
+          .select('activity_hours')
+          .eq('id', user.id)
+          .maybeSingle()
+        const hours: Record<string, number> = { ...(data?.activity_hours ?? {}) }
+        const h = String(new Date().getUTCHours())
+        hours[h] = (hours[h] ?? 0) + 1
+        await db
+          .from('user_profiles')
+          .update({ activity_hours: hours })
+          .eq('id', user.id)
+      } catch { /* histogram is best-effort */ }
+    })()
+
     return () => {
       window.clearInterval(interval)
       document.removeEventListener('visibilitychange', ping)

@@ -21,6 +21,9 @@ import { MorningSummaryToast } from '@/components/actions/MorningSummaryToast'
 import { ScoreGainToast } from '@/components/dashboard/ScoreGainToast'
 import { useScoreChangeWatcher } from '@/hooks/useScoreChangeWatcher'
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner'
+import { useApp } from '@/contexts/AppContext'
+import { loadPersonalization } from '@/lib/personalization'
+import { maybeAutoAdaptTheme } from '@/lib/themeAdaptation'
 
 function NotificationBridge() {
   useRealNotifications()
@@ -32,6 +35,15 @@ function NotificationBridge() {
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { connectedStore } = useApp()
+
+  // Skin-deep theme adaptation from the seller's confirmed shop personality
+  // (Section 6). Manual Settings choice always wins; see themeAdaptation.ts.
+  useEffect(() => {
+    const shopId = connectedStore?.id
+    if (!shopId) return
+    void loadPersonalization(shopId).then(p => maybeAutoAdaptTheme(p?.category))
+  }, [connectedStore?.id])
 
   // Preload the most-visited pages in the background so bottom-nav
   // navigation is instant after the first render, not just after the
