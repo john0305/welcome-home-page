@@ -349,10 +349,11 @@ of screens that can't be visually verified without auth.
 - **Simple/Advanced** now covers all four data screens: Intelligence hides Competitors/Customers/Trends/Activity tabs in Simple (with "+ More detail"); Performance hides the per-listing attribution list. Uses the existing `useViewMode` hook.
 - **Theme adaptation surfaced** (was invisible): `themeAdaptation.ts` gained `getThemeState`/`getShopMatchedTheme`/`lockTheme`/`resetToShopMatch` + full category coverage + drift-on-load; Settings→Appearance shows "Matched to your shop" and a "Match to my shop" reset, with manual pick as a permanent lock.
 
-**Verified:** all public routes 0px overflow at 390px; `/login` 0 axe violations; grade/contrast pairs pass AA via `contrast-audit.mjs`; AI fallback 11/11 via `ai-fallback-sim.mjs`.
+**Verified:** all public routes 0px overflow at 390px; `/login` 0 axe violations; grade/contrast pairs pass AA via `contrast-audit.mjs`; AI fallback 15/15 via `ai-fallback-sim.mjs`.
+
+**Resolved since this section was written:** `grade-listing` now refunds a failed grade via `refund_grade` (migration `20260703000002_refund_grade.sql`, mirrors `refund_optimization` exactly), called in the `!aiRes.ok` branch before it returns either the stale-grade fallback or an error — `consume_grade`'s upfront charge no longer costs the seller a credit on AI-gateway failure. The misleading in-code comment is corrected.
 
 **Open / found this pass:**
 1. **Authed-screen visual QA needs the owner's eyes** — no local login means Dashboard/Listings/Intelligence/Performance/Fix-Actions/Personalize interiors were audited by code + token math, not screenshots. The systemic fixes propagate to them, but final visual sign-off is the owner's.
-2. **`grade-listing` doesn't refund a failed grade** — `consume_grade` charges `grades_used` upfront and there is no `refund_grade` RPC (the fallback comment previously overclaimed this; now corrected). Backend follow-up: add `refund_grade` mirroring `refund_optimization` and call it in the `!aiRes.ok` branch. (Fixed this pass: `ScoreClimbBanner` `text-white` and other white-alpha artifacts via the remap.)
-3. `/register` waitlist page mixes light-tuned tokens on a hardcoded dark card (2 small helper-text nodes at 3.08:1). Reconciling that semi-dark marketing page's palette is a separate task.
-4. Deferred backend items from §7.12 (competitor-scan ToS, types regen, AppContext refactor, 500+ listings, Pinterest, photo apply-in-app, review-text mining) remain as listed.
+2. `/register` waitlist page mixes light-tuned tokens on a hardcoded dark card (2 small helper-text nodes at 3.08:1). Reconciling that semi-dark marketing page's palette is a separate task.
+3. Deferred backend items from §7.12 (competitor-scan ToS, types regen, AppContext refactor, 500+ listings, Pinterest, photo apply-in-app, review-text mining) remain as listed.

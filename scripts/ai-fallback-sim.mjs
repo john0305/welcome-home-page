@@ -9,11 +9,13 @@ let pass = 0, fail = 0
 const ok = (name, cond) => { (cond ? pass++ : fail++); console.log(`  ${cond ? 'PASS' : 'FAIL'}  ${name}`) }
 
 // ── grade-listing: verbatim reproduction of the !aiRes.ok branch ──
-// (supabase/functions/grade-listing/index.ts)
+// (supabase/functions/grade-listing/index.ts) — refunds via refund_grade
+// before branching into the stale-grade or error responses.
 function gradeFallback({ status, listing }) {
   // if (!aiRes.ok) {
+  const events = ['refund_grade']
   if (listing.score != null && listing.grade != null) {
-    return { kind: 'stale', body: {
+    return { events, kind: 'stale', body: {
       stale: true,
       graded_at: listing.last_graded ?? null,
       score: listing.score,
@@ -21,9 +23,9 @@ function gradeFallback({ status, listing }) {
       notice: "We couldn't refresh this grade just now, so you're seeing the last saved one. We'll retry automatically.",
     }, httpStatus: 200 }
   }
-  if (status === 429) return { kind: 'error', body: { error: 'Rate limited, please try again shortly.' }, httpStatus: 429 }
-  if (status === 402) return { kind: 'error', body: { error: 'AI credits exhausted. Please add credits in workspace settings.', upgrade_required: true }, httpStatus: 402 }
-  return { kind: 'error', body: { error: "We couldn't grade this listing just now — please try again in a moment." }, httpStatus: 502 }
+  if (status === 429) return { events, kind: 'error', body: { error: 'Rate limited, please try again shortly.' }, httpStatus: 429 }
+  if (status === 402) return { events, kind: 'error', body: { error: 'AI credits exhausted. Please add credits in workspace settings.', upgrade_required: true }, httpStatus: 402 }
+  return { events, kind: 'error', body: { error: "We couldn't grade this listing just now — please try again in a moment." }, httpStatus: 502 }
 }
 
 console.log('\n── grade-listing fallback ──')
@@ -32,18 +34,22 @@ console.log('\n── grade-listing fallback ──')
   ok('gateway 500 + prior grade → stale grade returned (not error/blank)', r.kind === 'stale' && r.httpStatus === 200 && r.body.stale === true && r.body.score === 82)
   ok('stale response carries a friendly "last saved" notice', /last saved one/.test(r.body.notice))
   ok('stale response includes graded_at date for "as of" display', r.body.graded_at === '2026-06-30')
+  ok('grade credit refunded even on the stale-fallback path', r.events.includes('refund_grade'))
 }
 {
   const r = gradeFallback({ status: 429, listing: { score: null, grade: null } })
   ok('gateway 429 + no prior grade → friendly 429 (never blank)', r.kind === 'error' && r.httpStatus === 429 && /try again/i.test(r.body.error))
+  ok('gateway 429 → grade credit refunded', r.events.includes('refund_grade'))
 }
 {
   const r = gradeFallback({ status: 402, listing: { score: null, grade: null } })
   ok('gateway 402 + no prior grade → upgrade-required message', r.httpStatus === 402 && r.body.upgrade_required === true)
+  ok('gateway 402 → grade credit refunded', r.events.includes('refund_grade'))
 }
 {
   const r = gradeFallback({ status: 500, listing: { score: null, grade: null } })
   ok('gateway 500 + no prior grade → friendly 502 (never blank)', r.httpStatus === 502 && /couldn't grade/i.test(r.body.error))
+  ok('gateway 500 → grade credit refunded', r.events.includes('refund_grade'))
 }
 
 // ── rewrite-listing: verbatim reproduction of failure handling ──

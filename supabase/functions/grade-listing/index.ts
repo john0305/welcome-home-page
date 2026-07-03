@@ -339,15 +339,14 @@ Also produce suggested_actions: 0-4 concrete, physical next-steps the seller can
     });
     // AI fallback (Section 12a): when a fresh grade can't be computed, return
     // the last successfully computed one clearly marked stale ("as of <date>")
-    // instead of an error or blank state.
-    // NOTE: consume_grade charges grades_used upfront, so a failed grade still
-    // costs one of the monthly allowance. There is no refund_grade RPC yet —
-    // tracked as a backend follow-up (mirror refund_optimization) so failed
-    // refreshes don't count against quota, per Section 12a fairness.
+    // instead of an error or blank state. consume_grade charges grades_used
+    // upfront, so refund it here — a failed grade must not cost the seller
+    // one of their monthly allowance.
     if (!aiRes.ok) {
       const status = aiRes.status;
       const detail = (await aiRes.text().catch(() => "")).slice(0, 200);
       console.error("grade-listing AI gateway failure", status, detail);
+      await supabase.rpc("refund_grade", { _user_id: userId });
       if (listing.score != null && listing.grade != null) {
         return json({
           stale: true,
