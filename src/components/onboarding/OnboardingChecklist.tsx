@@ -74,14 +74,16 @@ export function OnboardingChecklist({ onDismiss }: { onDismiss?: () => void }) {
           <div className="flex items-center gap-1">
             <button
               onClick={toggle}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10"
+              aria-label={collapsed ? 'Expand setup checklist' : 'Collapse setup checklist'}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted"
             >
               {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </button>
             {(allDone || pct >= 60) && onDismiss && (
               <button
                 onClick={onDismiss}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/10"
+                aria-label="Dismiss setup checklist"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted"
               >
                 <X className="h-4 w-4" />
               </button>

@@ -97,7 +97,7 @@ export function MobileBottomNav() {
           />
           <button
             onClick={toggleEcho}
-            aria-label={echoOpen ? 'Close Echo' : 'Ask Radar'}
+            aria-label={echoOpen ? 'Close Echo' : 'Ask Echo'}
             className="absolute transition-transform active:scale-95"
             style={{
               width: 52, height: 52, bottom: 10, left: '50%',
