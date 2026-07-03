@@ -10,11 +10,13 @@ interface Props {
   syncStats: LiveSyncStats
 }
 
+// Honest but encouraging (Section 7a): the lower bands name the trajectory,
+// not a verdict — a seller at 40 should feel "next step", not "report card".
 function ratingLabel(score: number): string {
   if (score >= 80) return 'Excellent'
   if (score >= 65) return 'Good'
-  if (score >= 45) return 'Fair'
-  return 'Poor'
+  if (score >= 45) return 'Getting there'
+  return 'Big upside here'
 }
 
 function FactorRing({ score }: { score: number }) {

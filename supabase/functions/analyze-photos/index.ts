@@ -233,11 +233,14 @@ Also produce recommended_order: the photo indexes (1-based) in the order they sh
       headers: { Authorization: `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify(aiBody),
     });
-    if (aiRes.status === 429) return json({ error: "Rate limited, please try again shortly." }, 429);
-    if (aiRes.status === 402) return json({ error: "AI credits exhausted.", upgrade_required: true }, 402);
+    // Failed analyses must not charge quota (Section 12a).
+    const refund = () => supabase.rpc("refund_optimization", { _user_id: userId });
+    if (aiRes.status === 429) { await refund(); return json({ error: "Rate limited, please try again shortly. This attempt wasn't counted against your quota." }, 429); }
+    if (aiRes.status === 402) { await refund(); return json({ error: "AI credits exhausted.", upgrade_required: true }, 402); }
     if (!aiRes.ok) {
       console.error("AI gateway error", aiRes.status, (await aiRes.text()).slice(0, 400));
-      return json({ error: `Photo analysis failed (${aiRes.status})` }, 502);
+      await refund();
+      return json({ error: `Photo analysis hit a snag on our side — your quota wasn't charged. Please try again. (${aiRes.status})` }, 502);
     }
 
     const aiJson = await aiRes.json();
@@ -247,10 +250,12 @@ Also produce recommended_order: the photo indexes (1-based) in the order they sh
       analysis = JSON.parse(toolCall?.function?.arguments ?? "{}");
     } catch {
       console.error("Failed to parse photo analysis tool call");
-      return json({ error: "AI returned an invalid response. Please try again." }, 502);
+      await refund();
+      return json({ error: "The AI returned something unusable — your quota wasn't charged. Please try again." }, 502);
     }
     if (!Array.isArray(analysis.photos) || analysis.photos.length === 0) {
-      return json({ error: "AI returned an empty analysis. Please try again." }, 502);
+      await refund();
+      return json({ error: "The AI returned an empty analysis — your quota wasn't charged. Please try again." }, 502);
     }
 
     // Attach context the UI needs alongside the AI output.

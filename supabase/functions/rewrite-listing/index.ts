@@ -206,11 +206,14 @@ Example: ["sterling silver", "cubic zirconia", "rhodium plated"]`;
         max_tokens: 1500,
       }),
     });
-    if (aiRes.status === 429) return json({ error: "Rate limited, please try again shortly." }, 429);
-    if (aiRes.status === 402) return json({ error: "AI credits exhausted.", upgrade_required: true }, 402);
+    // Failed generations must not charge quota (Section 12a).
+    const refund = () => supabase.rpc("refund_optimization", { _user_id: userId });
+    if (aiRes.status === 429) { await refund(); return json({ error: "Rate limited, please try again shortly. This attempt wasn't counted against your quota." }, 429); }
+    if (aiRes.status === 402) { await refund(); return json({ error: "AI credits exhausted.", upgrade_required: true }, 402); }
     if (!aiRes.ok) {
       const txt = await aiRes.text();
-      return json({ error: `AI gateway ${aiRes.status}: ${txt.slice(0, 300)}` }, 502);
+      await refund();
+      return json({ error: `The AI service had trouble just now — your quota wasn't charged. Please try again. (gateway ${aiRes.status}: ${txt.slice(0, 200)})` }, 502);
     }
     const aiJson = await aiRes.json();
     let suggested = String(aiJson?.choices?.[0]?.message?.content ?? "").trim();
@@ -223,8 +226,9 @@ Example: ["sterling silver", "cubic zirconia", "rhodium plated"]`;
     // Reject placeholder/fill-in text — sellers approve or reject, they don't edit.
     const placeholderHits = findPlaceholders({ [type]: suggested });
     if (placeholderHits.length) {
+      await refund();
       return json({
-        error: "AI couldn't produce a publish-ready rewrite (it left placeholder text for you to fill in). Please try again.",
+        error: "AI couldn't produce a publish-ready rewrite (it left placeholder text for you to fill in). Your quota wasn't charged — please try again.",
         placeholder_hits: placeholderHits,
       }, 502);
     }

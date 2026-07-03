@@ -214,10 +214,10 @@ export function GuidedFixFlow({
     const Icon = type === 'tags' ? Tag : Type
     const title = type === 'tags'
       ? `You're leaving ${tagsToAdd.length} high-traffic tag${tagsToAdd.length !== 1 ? 's' : ''} on the table`
-      : `Your title is ${currentTitle.length} chars — competitors average longer`
+      : `This title has room to reach more shoppers`
     const context = type === 'tags'
-      ? `Your competitors use these tags you don't: ${tagsToAdd.slice(0, 3).map(t => `[${t}]`).join(' ')}${tagsToAdd.length > 3 ? ` + ${tagsToAdd.length - 3} more` : ''}. You have ${tagsAvailable} tag slot${tagsAvailable !== 1 ? 's' : ''} free.`
-      : `Your title is ${currentTitle.length} characters. Competitors average ${marketScore.market_rank_estimate ? '90+' : 'longer'} characters with more keyword variety.`
+      ? `Shops like yours are ranking with tags you haven't used yet: ${tagsToAdd.slice(0, 3).map(t => `[${t}]`).join(' ')}${tagsToAdd.length > 3 ? ` + ${tagsToAdd.length - 3} more` : ''}. You have ${tagsAvailable} tag slot${tagsAvailable !== 1 ? 's' : ''} free — easy win.`
+      : `At ${currentTitle.length} characters, this title's shorter than what's winning your searches (${marketScore.market_rank_estimate ? '90+' : 'noticeably longer'}, with more of the words buyers type). Want help expanding it?`
 
     return (
       <div className="rounded-xl border border-border bg-surface-1 p-4">

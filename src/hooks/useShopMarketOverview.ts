@@ -72,8 +72,8 @@ function buildActionPlan(
       dimension: 'tags',
       title: `Add the ${top_missing_tags.length > 0 ? top_missing_tags.length + ' competitor' : 'missing'} tags your buyers are searching for`,
       detail: gapTags > 0
-        ? `Your listings average ${userAvg.tags} tags. Competitors average ${benchmarks!.avg_tag_count}. That gap costs you search matches every day.`
-        : `${scores.tag_score.failing_count} listings have significant tag gaps vs top competitors.`,
+        ? `Your listings run about ${userAvg.tags} tags each, while similar shops use around ${benchmarks!.avg_tag_count} — every extra tag is another search you can show up in.`
+        : `${scores.tag_score.failing_count} listings could reach more searches with a fuller tag set.`,
       listing_count: scores.tag_score.failing_count,
       sub_score: scores.tag_score.avg,
       route: '/app/listings',
@@ -89,8 +89,8 @@ function buildActionPlan(
       dimension: 'title',
       title: `Lengthen titles to match what's winning in your niche`,
       detail: gapChars > 0
-        ? `Your titles average ${userAvg.title} characters. Top competitors average ${benchmarks!.avg_title_length}. Longer keyword-rich titles rank measurably better.`
-        : `${scores.title_score.failing_count} listings have titles significantly shorter than niche leaders.`,
+        ? `Your titles run about ${userAvg.title} characters — shops winning your searches use closer to ${benchmarks!.avg_title_length}, packing in the words buyers actually type.`
+        : `${scores.title_score.failing_count} listings have room to grow into longer, keyword-rich titles.`,
       listing_count: scores.title_score.failing_count,
       sub_score: scores.title_score.avg,
       route: '/app/listings',

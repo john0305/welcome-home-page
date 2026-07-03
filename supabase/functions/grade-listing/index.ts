@@ -337,9 +337,27 @@ Also produce suggested_actions: 0-4 concrete, physical next-steps the seller can
       headers: { Authorization: `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify(aiBody),
     });
-    if (aiRes.status === 429) return json({ error: "Rate limited, please try again shortly." }, 429);
-    if (aiRes.status === 402) return json({ error: "AI credits exhausted. Please add credits in workspace settings.", upgrade_required: true }, 402);
-    if (!aiRes.ok) return json({ error: `AI gateway ${aiRes.status}: ${(await aiRes.text()).slice(0, 300)}` }, 502);
+    // AI fallback (Section 12a): when a fresh grade can't be computed, return
+    // the last successfully computed one clearly marked stale ("as of <date>")
+    // instead of an error or blank state. Refund the grade credit either way.
+    if (!aiRes.ok) {
+      const status = aiRes.status;
+      const detail = (await aiRes.text().catch(() => "")).slice(0, 200);
+      console.error("grade-listing AI gateway failure", status, detail);
+      if (listing.score != null && listing.grade != null) {
+        return json({
+          stale: true,
+          graded_at: listing.last_graded ?? null,
+          score: listing.score,
+          grade: listing.grade,
+          score_breakdown: listing.score_breakdown ?? null,
+          notice: "We couldn't refresh this grade just now, so you're seeing the last saved one. We'll retry automatically.",
+        });
+      }
+      if (status === 429) return json({ error: "Rate limited, please try again shortly." }, 429);
+      if (status === 402) return json({ error: "AI credits exhausted. Please add credits in workspace settings.", upgrade_required: true }, 402);
+      return json({ error: "We couldn't grade this listing just now — please try again in a moment." }, 502);
+    }
 
     const aiJson = await aiRes.json();
     const toolCall = aiJson?.choices?.[0]?.message?.tool_calls?.[0];

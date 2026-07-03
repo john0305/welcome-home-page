@@ -121,9 +121,12 @@ Respond with ONLY valid JSON:
         messages: [{ role: "user", content: prompt }],
       }),
     });
+    // Failed generations must not charge quota (Section 12a).
+    const refund = () => supabase.rpc("refund_optimization", { _user_id: userId });
     if (!claudeRes.ok) {
       const txt = await claudeRes.text();
-      return json({ error: `Claude ${claudeRes.status}: ${txt.slice(0, 300)}` }, 502);
+      await refund();
+      return json({ error: `The AI service had trouble just now — your quota wasn't charged. Please try again. (${claudeRes.status}: ${txt.slice(0, 200)})` }, 502);
     }
     const claudeJson = await claudeRes.json();
     const text = String(claudeJson?.content?.[0]?.text ?? "")
@@ -133,7 +136,8 @@ Respond with ONLY valid JSON:
     try {
       parsed = JSON.parse(text);
     } catch {
-      return json({ error: "Invalid AI response" }, 502);
+      await refund();
+      return json({ error: "The AI returned something unusable — your quota wasn't charged. Please try again." }, 502);
     }
 
     // Reject placeholder/fill-in text — sellers approve or reject, they don't edit.
@@ -144,8 +148,9 @@ Respond with ONLY valid JSON:
       materials: Array.isArray(parsed.materials) ? (parsed.materials as string[]) : [],
     });
     if (placeholderHits.length) {
+      await refund();
       return json({
-        error: "AI couldn't produce a publish-ready listing (it left placeholder text for you to fill in). Please try again.",
+        error: "AI couldn't produce a publish-ready listing (it left placeholder text for you to fill in). Your quota wasn't charged — please try again.",
         placeholder_hits: placeholderHits,
       }, 502);
     }

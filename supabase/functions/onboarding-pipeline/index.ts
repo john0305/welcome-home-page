@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
             severity: scored.title_score < 50 ? "high" : "medium",
             current_value: userListing.title,
             proposed_value: null, // generated on demand when user clicks Fix
-            rationale: `Your title is ${titleLen} characters. Competitors average ${targetLen} characters. A longer, keyword-rich title improves search placement.`,
+            rationale: `This title's leaving room on the table — at ${titleLen} characters, shoppers searching for pieces like yours are seeing much longer, keyword-rich titles (around ${targetLen} characters) from similar shops. Want help expanding it?`,
             evidence: {
               current_length: titleLen,
               avg_competitor_length: targetLen,
