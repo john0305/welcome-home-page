@@ -1107,8 +1107,13 @@ export default function ListingDetail() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <ul className="space-y-1">
-                              {grade.strengths!.map((s, i) => <li key={i} className="text-sm text-muted-foreground pl-4">• {s}</li>)}
+                            <ul className="space-y-1.5">
+                              {grade.strengths!.map((s, i) => (
+                                <li key={i} className="flex items-start gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-sm leading-snug text-foreground/90">
+                                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                                  <span>{s}</span>
+                                </li>
+                              ))}
                             </ul>
                           </CardContent>
                         </Card>
@@ -1121,8 +1126,13 @@ export default function ListingDetail() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <ul className="space-y-1">
-                              {grade.weaknesses!.map((s, i) => <li key={i} className="text-sm text-muted-foreground pl-4">• {s}</li>)}
+                            <ul className="space-y-1.5">
+                              {grade.weaknesses!.map((s, i) => (
+                                <li key={i} className="flex items-start gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-sm leading-snug text-foreground/90">
+                                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                  <span>{s}</span>
+                                </li>
+                              ))}
                             </ul>
                           </CardContent>
                         </Card>
@@ -1136,7 +1146,14 @@ export default function ListingDetail() {
                           </CardHeader>
                           <CardContent>
                             <ul className="space-y-1.5">
-                              {grade.recommendations!.map((s, i) => <li key={i} className="text-sm text-muted-foreground pl-4">• {s}</li>)}
+                              {grade.recommendations!.map((s, i) => (
+                                <li key={i} className="flex items-start gap-2 rounded-lg bg-blue-50 px-2.5 py-2 text-sm leading-snug text-foreground/90">
+                                  <span className="mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
+                                    {i + 1}
+                                  </span>
+                                  <span>{s}</span>
+                                </li>
+                              ))}
                             </ul>
                           </CardContent>
                         </Card>
@@ -1248,7 +1265,7 @@ export default function ListingDetail() {
                                     <span className="text-muted-foreground">
                                       · Current: <span className={`font-medium ${opt.latest_grade >= opt.new_grade ? 'text-emerald-600' : 'text-amber-600'}`}>{opt.latest_grade}</span>
                                       <span className="ml-1">({opt.latest_grade >= opt.new_grade ? '+' : ''}{opt.latest_grade - opt.new_grade} since)</span>
-                                      {opt.latest_grade_at && <span className="ml-1 text-muted-foreground/70">· re-graded {formatDate(opt.latest_grade_at)}</span>}
+                                      {opt.latest_grade_at && <span className="ml-1 text-muted-foreground">· re-graded {formatDate(opt.latest_grade_at)}</span>}
                                     </span>
                                   )}
                                 </div>

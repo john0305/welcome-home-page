@@ -164,7 +164,7 @@ export function EchoPicksPanel() {
                 tabIndex={0}
                 onClick={() => openListing(row)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openListing(row) } }}
-                className="rounded-lg flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors bg-surface-2 border border-border hover:bg-warm-gray active:scale-[0.99]"
+                className="rounded-lg flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors bg-surface-2 border border-border hover:bg-surface-3 active:scale-[0.99]"
               >
                 {/* Thumbnail */}
                 <div className="h-8 w-8 rounded-md shrink-0 overflow-hidden flex items-center justify-center mt-0.5 bg-border">

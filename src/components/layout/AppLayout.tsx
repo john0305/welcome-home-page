@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet } from 'react-router-dom'
+import { useScrollToTop } from '@/hooks/useScrollToTop'
 import { Sidebar } from './Sidebar'
 import { Toaster } from '@/components/ui/toaster'
 import { MobileHeaderProvider } from '@/contexts/MobileHeaderContext'
@@ -36,6 +37,11 @@ function NotificationBridge() {
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { connectedStore } = useApp()
+  // The scrollable region is this internal div, not the window — reset it
+  // (and the window, harmlessly) on every route change so a new page always
+  // opens at the top instead of wherever the previous page's scroll offset was.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useScrollToTop(scrollRef)
 
   // Skin-deep theme adaptation from the seller's confirmed shop personality
   // (Section 6). Manual Settings choice always wins; see themeAdaptation.ts.
@@ -82,6 +88,7 @@ export function AppLayout() {
           <PersistentStoreHeader onMobileMenuOpen={() => setMobileNavOpen(true)} />
         </div>
         <div
+          ref={scrollRef}
           className="flex-1 overflow-y-auto scrollbar-thin pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0"
           style={{ overscrollBehaviorY: 'none' }}
         >

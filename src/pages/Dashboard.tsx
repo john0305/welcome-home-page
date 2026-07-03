@@ -205,9 +205,12 @@ export default function Dashboard() {
         {/* ── HERO: two-column (greeting left, health score right) ── */}
         {hasData ? (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
-            {/* Left: greeting + message + CTA */}
+            {/* Left: greeting + message + CTA. min-w-0 lets this column actually
+                shrink on resize — CSS Grid items default to min-width:auto, so
+                without it this track refuses to compress below its content's
+                intrinsic width and pushes the fixed 280px column off-screen. */}
             <div
-              className="rounded-2xl border border-border overflow-hidden relative"
+              className="rounded-2xl border border-border overflow-hidden relative min-w-0"
               style={{ background: 'hsl(var(--surface-1))' }}
             >
               {/* Decorative warm glow — top-right corner only */}
@@ -380,8 +383,11 @@ export default function Dashboard() {
         {hasData && (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
 
-            {/* LEFT column */}
-            <div className="space-y-4">
+            {/* LEFT column. min-w-0 lets this track shrink on resize instead
+                of forcing horizontal overflow that pushes the fixed 300px
+                right column (Echo's Insight etc.) off-screen — CSS Grid items
+                default to min-width:auto, ignoring the 1fr track sizing. */}
+            <div className="space-y-4 min-w-0">
 
               {/* Daily AI Briefing */}
               {connectedStore?.id && (
@@ -400,7 +406,7 @@ export default function Dashboard() {
             </div>
 
             {/* RIGHT column */}
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
 
               {/* Echo's Insight — the one proactive-assistant voice (naming unified: Echo) */}
               <div className="rounded-2xl border border-violet-300/50 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-950/20 overflow-hidden">

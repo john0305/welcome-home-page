@@ -211,6 +211,42 @@ html:not(.dark) [data-app-shell] .bg-white\/\[0\.015\],
 html:not(.dark) [data-app-shell] .bg-white\/\[0\.02\],
 html:not(.dark) [data-app-shell] .bg-white\/\[0\.04\] { background-color: hsl(var(--surface-1)); }
 
+/* ── Opacity-modified text-color tokens fail AA on the light surface ──────
+   The base tokens (muted-foreground, foreground, primary) were remapped to
+   pass WCAG AA at full strength — but Tailwind's `/NN` opacity-modifier
+   syntax (e.g. `text-muted-foreground/70`) blends the ALREADY-fixed color
+   back toward the background, silently reintroducing the same failure one
+   layer down. Measured: muted-foreground/70 = 3.02:1 (needs 4.5:1); the
+   token only clears AA at ~90%+ opacity. This is the History-tab bug
+   (`text-muted-foreground/70` on a re-graded timestamp) and the same
+   opacity-on-token pattern recurs ~120 times app-wide, so it's fixed here
+   once rather than at each call site. Scoped to real text via `:not(svg)`
+   so intentionally-faded decorative/functional icons (Lucide renders as
+   inline <svg>) keep their original fade — icons aren't subject to text
+   contrast rules. Light app-shell only; dark mode's own token values are
+   already legible at these opacities. */
+html:not(.dark) [data-app-shell] .text-muted-foreground\/20:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/30:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/35:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/40:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/50:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/55:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/60:not(svg),
+html:not(.dark) [data-app-shell] .text-muted-foreground\/70:not(svg) { color: hsl(var(--muted-foreground)); }
+html:not(.dark) [data-app-shell] .placeholder\:text-muted-foreground\/40::placeholder,
+html:not(.dark) [data-app-shell] .placeholder\:text-muted-foreground\/50::placeholder { color: hsl(var(--muted-foreground)); }
+html:not(.dark) [data-app-shell] .text-foreground\/40:not(svg),
+html:not(.dark) [data-app-shell] .text-foreground\/50:not(svg) { color: hsl(var(--foreground) / 0.75); }
+html:not(.dark) [data-app-shell] .text-primary\/50:not(svg),
+html:not(.dark) [data-app-shell] .text-primary\/60:not(svg),
+html:not(.dark) [data-app-shell] .text-primary\/70:not(svg) { color: hsl(var(--primary)); }
+/* --secondary (terracotta) itself only reaches 3.07:1 at full opacity —
+   a base-token failure, not an opacity issue. Only 2 real usages app-wide
+   (a price tag, an inline highlighted number); darkened directly rather
+   than touching the shared --secondary variable, which also drives button
+   backgrounds elsewhere where white-on-terracotta contrast is unaffected. */
+html:not(.dark) [data-app-shell] .text-secondary:not(svg) { color: hsl(22 65% 38%); }
+
 /* ── Color accent themes ────────────────────────────────────────────────── */
 :root,
 :root[data-color-theme="forest"] {

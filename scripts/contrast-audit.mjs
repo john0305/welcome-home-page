@@ -112,3 +112,61 @@ for (const [c,[t,tint]] of Object.entries(remap)) {
   const onTint = ratio(hexToRgb(t), hexToRgb(tint))
   console.log(`  ${onBg>=4.5&&onTint>=4.5?'PASS':'WARN'}  ${c}-700  onBg ${onBg.toFixed(2)}  onTint ${onTint.toFixed(2)}`)
 }
+
+// ── History tab bug (reported): text-muted-foreground/70 on the re-graded
+// timestamp span. Direct fix removed the opacity modifier entirely (now
+// plain text-muted-foreground); the systemic remap below covers every other
+// call site using the same opacity-on-token pattern app-wide. ──
+const cardBg = hslToRgb(0, 0, 100)
+const blendOpacity = (fg, bg, alpha) => fg.map((v, i) => Math.round(v * alpha + bg[i] * (1 - alpha)))
+console.log('\n── Bug #2: History tab — before/after ──')
+{
+  const before = blendOpacity(mutedNew, cardBg, 0.70) // was: text-muted-foreground/70
+  const r = ratio(before, cardBg)
+  console.log(`  ${r>=4.5?'PASS':'FAIL'}  ${r.toFixed(2)}:1  BEFORE (text-muted-foreground/70 on card)`)
+}
+{
+  const r = ratio(mutedNew, cardBg) // after: plain text-muted-foreground
+  console.log(`  ${r>=4.5?'PASS':'FAIL'}  ${r.toFixed(2)}:1  AFTER  (text-muted-foreground on card)`)
+}
+
+// ── Systemic sweep: every opacity-modified token class found app-wide (121
+// text-muted-foreground/NN + 20 text-foreground/NN + 6 text-primary/NN
+// instances) now resolves through the CSS remap in index.css to one of
+// these fixed, verified-passing colors. ──
+console.log('\n── Bug #2 sweep: opacity-token remap targets ──')
+const sweepTargets = [
+  ['text-muted-foreground/{20,30,35,40,50,55,60,70} → muted-foreground', mutedNew, cardBg],
+  ['text-foreground/{40,50} → foreground/0.75', blendOpacity(hslToRgb(20,10,11), cardBg, 0.75), cardBg],
+  ['text-primary/{50,60,70} → primary', hslToRgb(163,55,28), cardBg],
+  ['text-secondary (base token itself fails at 100%) → 22 65% 38%', hslToRgb(22,65,38), cardBg],
+]
+for (const [label, fg, bg] of sweepTargets) {
+  const r = ratio(fg, bg)
+  console.log(`  ${r>=4.5?'PASS':'FAIL'}  ${r.toFixed(2)}:1  ${label}`)
+}
+{
+  // The base --secondary token itself, unmodified — confirms it's a
+  // genuine base-token failure, not an opacity artifact.
+  const r = ratio(hslToRgb(22,65,56), cardBg)
+  console.log(`  ${r>=4.5?'PASS':'note'}  ${r.toFixed(2)}:1  text-secondary BASE token at 100% opacity (pre-existing, not opacity-related)`)
+}
+
+// ── Bug #4: "Your path forward" hover (EchoPicksPanel.tsx). Root cause:
+// hover:bg-warm-gray used a STATIC hex (tailwind.config.ts `warm.gray`,
+// #F3F1EE) with no dark-mode variant, while the row's text uses the
+// theme-aware `text-foreground` token, which is near-white in dark mode
+// (index.css .dark block: "36 20% 95%"). Only reproduces with the app in
+// dark mode — invisible in light-mode manual testing, which is presumably
+// how it slipped through. Fixed to hover:bg-surface-3, a token with its
+// own correct dark-mode value. ──
+console.log('\n── Bug #4: "Your path forward" hover — dark mode ──')
+{
+  const fgDark = hslToRgb(36, 20, 95)          // text-foreground, dark mode
+  const warmGrayStatic = hexToRgb('#F3F1EE')   // OLD: static, no dark variant
+  const surface3Dark = hslToRgb(220, 10, 22)   // NEW: --surface-3, dark mode
+  const before = ratio(fgDark, warmGrayStatic)
+  const after = ratio(fgDark, surface3Dark)
+  console.log(`  ${before>=4.5?'PASS':'FAIL'}  ${before.toFixed(2)}:1  BEFORE (text-foreground on static warm-gray, dark mode)`)
+  console.log(`  ${after>=4.5?'PASS':'FAIL'}  ${after.toFixed(2)}:1  AFTER  (text-foreground on surface-3, dark mode)`)
+}

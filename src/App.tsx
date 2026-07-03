@@ -11,6 +11,7 @@ import { AdminRoute, SellerRoute } from '@/components/auth/AdminRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { SplashScreen } from '@/components/SplashScreen'
+import { ScrollToTop } from '@/hooks/useScrollToTop'
 
 // ─── Eagerly loaded (entry paths — must be instant) ───────────────────────────
 import Landing from '@/pages/Landing'
@@ -83,6 +84,7 @@ export default function App() {
         <AuthProvider>
           <NotificationProvider>
           <TooltipProvider>
+            <ScrollToTop />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public — eagerly loaded */}

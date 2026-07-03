@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: sans-serif; background: #FAF9F6; }
+  .page { width: 100%; max-width: 1600px; margin: 0 auto; padding: 16px; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 300px; } }
+  .minw0 { min-width: 0; }
+  .left { background: #fff; border: 1px solid #E2DDD6; border-radius: 12px; padding: 16px; }
+  .right { background: #f5f0fa; border: 1px solid #ddc; border-radius: 12px; padding: 16px; }
+  /* Simulates real dashboard content that has an intrinsic min-content width
+     wider than a narrowed viewport can give the 1fr track — e.g. a KPI row
+     of 4 non-wrapping stat cards, similar to Dashboard.tsx's StitchKPI grid. */
+  .kpi-row { display: flex; gap: 12px; }
+  .kpi { flex: 1; min-width: 220px; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 12px; white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <h3 id="label">BEFORE (no min-w-0)</h3>
+    <div class="grid" id="grid">
+      <div class="left" id="leftcol">
+        <div class="kpi-row">
+          <div class="kpi">Active Listings: 128</div>
+          <div class="kpi">Avg. Listing Grade: B</div>
+          <div class="kpi">Views This Week: 4,204</div>
+          <div class="kpi">Needs Attention: 12</div>
+        </div>
+      </div>
+      <div class="right" id="rightcol">Echo's Insight panel content here</div>
+    </div>
+  </div>
+<script>
+  function apply(useFix) {
+    document.getElementById('label').textContent = useFix ? 'AFTER (min-w-0 applied)' : 'BEFORE (no min-w-0)'
+    document.getElementById('leftcol').classList.toggle('minw0', useFix)
+    document.getElementById('rightcol').classList.toggle('minw0', useFix)
+  }
+  window.__apply = apply
+</script>
+</body>
+</html>
