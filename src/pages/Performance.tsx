@@ -17,6 +17,7 @@ import { ShareableCard } from '@/components/performance/ShareableCard'
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip as RTooltip, ReferenceLine, ReferenceArea } from 'recharts'
 import { useApp } from '@/contexts/AppContext'
 import { Plane } from 'lucide-react'
+import { useViewMode } from '@/hooks/useViewMode'
 
 type AttributionRow = any
 type WinRow = any
@@ -26,6 +27,7 @@ type Listing = { id: string; title: string; thumbnail_url: string | null }
 export default function Performance() {
   const { user } = useAuth()
   const { connectedStore } = useApp()
+  const { isAdvanced, setMode: setViewMode } = useViewMode()
   const isVacation = !!connectedStore?.is_vacation
   const [loading, setLoading] = useState(true)
   const [rows, setRows] = useState<AttributionRow[]>([])
@@ -253,7 +255,19 @@ export default function Performance() {
               </div>
             )}
 
-            {/* Listing performance */}
+            {/* Listing performance — per-listing attribution windows are the
+                power-user detail; hidden in Simple view behind a gentle nudge. */}
+            {!isAdvanced ? (
+              <button
+                onClick={() => setViewMode('advanced')}
+                className="w-full rounded-[var(--radius-lg)] border border-dashed border-border bg-surface-1/50 px-4 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
+              >
+                <p className="text-sm font-medium text-foreground">See the per-listing breakdown</p>
+                <p className="text-xs mt-0.5 text-muted-foreground">
+                  Switch to Advanced view for score, view, and favorite deltas on every optimized listing.
+                </p>
+              </button>
+            ) : (
             <div className="rounded-[var(--radius-lg)] border border-border bg-card overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 border-b border-border">
                 <p className="text-sm font-semibold text-foreground">Listing Performance</p>
@@ -282,9 +296,9 @@ export default function Performance() {
                     return (
                       <button key={r.id}
                         onClick={() => setSelected(r)}
-                        className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+                        className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2"
                       >
-                        <div className="h-10 w-10 rounded-md overflow-hidden shrink-0" style={{ background: '#0d1f1f' }}>
+                        <div className="h-10 w-10 rounded-lg overflow-hidden shrink-0 bg-surface-2">
                           {l?.thumbnail_url && <img src={l.thumbnail_url} alt="" className="h-full w-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -314,6 +328,7 @@ export default function Performance() {
                 </div>
               )}
             </div>
+            )}
           </>
         )}
       </div>
@@ -351,9 +366,13 @@ function Stat({ label, value, accentColor }: { label: string; value: string; acc
 }
 
 function MetricPill({ label, value, positive }: { label: string; value: string; positive: boolean }) {
+  // Warm, AA-compliant: emerald-700 up, clay (orange-700) down — never harsh red.
+  const color = value === '—'
+    ? 'hsl(var(--muted-foreground))'
+    : positive ? '#047857' : '#c2410c'
   return (
     <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
-      {label}: <span style={{ color: positive ? '#34d399' : value === '—' ? '#475569' : '#f87171' }}>{value}</span>
+      {label}: <span style={{ color }}>{value}</span>
     </span>
   )
 }

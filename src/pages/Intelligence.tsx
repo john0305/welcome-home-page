@@ -21,6 +21,7 @@ import {
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useApp } from '@/contexts/AppContext'
+import { useViewMode } from '@/hooks/useViewMode'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
@@ -248,9 +249,14 @@ export default function Intelligence() {
   // Persist the active tab to the URL (?tab=alerts) so browser back/forward
   // restores the tab the user was on instead of snapping back to "overview".
   const [searchParams, setSearchParams] = useSearchParams()
+  const { isAdvanced, setMode: setViewMode } = useViewMode()
   const VALID_TABS = ['overview', 'listings', 'competitors', 'customers', 'trends', 'activity', 'alerts']
+  // Simple view keeps the actionable tabs; the deep-analytics tabs
+  // (competitors/customers/trends/activity) are Advanced-only per Section 7.
+  const SIMPLE_TABS = ['overview', 'listings', 'alerts']
   const urlTab = searchParams.get('tab') || ''
-  const tab = VALID_TABS.includes(urlTab) ? urlTab : 'overview'
+  const rawTab = VALID_TABS.includes(urlTab) ? urlTab : 'overview'
+  const tab = (isAdvanced || SIMPLE_TABS.includes(rawTab)) ? rawTab : 'overview'
   const setTab = (next: string) => {
     const sp = new URLSearchParams(searchParams)
     if (!next || next === 'overview') sp.delete('tab')
@@ -506,13 +512,21 @@ export default function Intelligence() {
             <TabsList variant="line" className="inline-flex w-max gap-0 px-0">
               <TabsTrigger value="overview" className="text-xs whitespace-nowrap">Overview</TabsTrigger>
               <TabsTrigger value="listings" className="text-xs whitespace-nowrap">Listings</TabsTrigger>
-              <TabsTrigger value="competitors" className="text-xs whitespace-nowrap">Competitors</TabsTrigger>
-              <TabsTrigger value="customers" className="text-xs whitespace-nowrap">Customers</TabsTrigger>
-              <TabsTrigger value="trends" className="text-xs whitespace-nowrap">Trends</TabsTrigger>
-              <TabsTrigger value="activity" className="text-xs whitespace-nowrap">Activity</TabsTrigger>
+              {isAdvanced && <TabsTrigger value="competitors" className="text-xs whitespace-nowrap">Competitors</TabsTrigger>}
+              {isAdvanced && <TabsTrigger value="customers" className="text-xs whitespace-nowrap">Customers</TabsTrigger>}
+              {isAdvanced && <TabsTrigger value="trends" className="text-xs whitespace-nowrap">Trends</TabsTrigger>}
+              {isAdvanced && <TabsTrigger value="activity" className="text-xs whitespace-nowrap">Activity</TabsTrigger>}
               <TabsTrigger value="alerts" className="text-xs whitespace-nowrap flex items-center gap-1">
                 Alerts{(() => { const n = derived.alerts.filter(a => !dismissed.has(a.key)).length; return n > 0 ? <Badge className="h-4 px-1 text-[9px]">{n}</Badge> : null })()}
               </TabsTrigger>
+              {!isAdvanced && (
+                <button
+                  onClick={() => setViewMode('advanced')}
+                  className="ml-1 shrink-0 self-center rounded-full border border-dashed border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  + More detail
+                </button>
+              )}
             </TabsList>
           </div>
 
