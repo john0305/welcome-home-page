@@ -148,7 +148,21 @@ export interface PhotoAnalysisResult {
     overall_score: number
     photo_count: number
     max_photos: number
-    photos: Array<{ index: number; score: number; grade: 'A'|'B'|'C'|'D'|'F'; issues: string[]; suggestions: string[] }>
+    photos: Array<{
+      index: number; score: number; grade: 'A'|'B'|'C'|'D'|'F'
+      issues: string[]; suggestions: string[]
+      /** keep = working; edit = fixable in software; retake = reshoot (or recreate, for digital previews) */
+      action?: 'keep' | 'edit' | 'retake'
+      action_reason?: string
+      edit_guidance?: string
+    }>
+    /** 1-based photo indexes in recommended display order (conversion-first). */
+    recommended_order?: number[]
+    reorder_reason?: string
+    /** Which type lens the analysis used (digital, made_to_order, vintage, …). */
+    listing_kind?: string
+    /** Aggregate niche photo-count benchmark (never names competitors). */
+    benchmark?: { peer_median_photos: number; peer_top_quartile_photos: number; sample_size: number }
     missing_shots: string[]
     metadata_mismatches?: Array<{ field: 'title'|'description'|'tags'|'materials'; claim: string; issue: string }>
     metadata_gaps?: Array<{ field: 'title'|'description'|'tags'|'materials'; visible_in_photos: string; suggestion: string }>

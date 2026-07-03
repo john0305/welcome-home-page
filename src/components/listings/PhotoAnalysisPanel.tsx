@@ -27,6 +27,12 @@ const GRADE_COLOR: Record<string, string> = {
   F: 'bg-red-500 text-white',
 }
 
+const ACTION_STYLE: Record<string, { label: string; cls: string }> = {
+  keep: { label: 'Keep', cls: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+  edit: { label: 'Quick edit', cls: 'bg-blue-100 text-blue-700 border-blue-300' },
+  retake: { label: 'Retake', cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+}
+
 export function PhotoAnalysisPanel({ open, onOpenChange, loading, result, photoUrls, onReanalyze }: Props) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0)
 
@@ -71,7 +77,15 @@ export function PhotoAnalysisPanel({ open, onOpenChange, loading, result, photoU
                 <p className="text-xs">
                   <span className="font-medium">{result.photo_count}</span> of {result.max_photos} photos uploaded
                 </p>
-                {result.photo_count < result.max_photos && (
+                {result.benchmark ? (
+                  <p className="text-[11px] text-muted-foreground text-center leading-snug">
+                    Shops in your niche typically show{' '}
+                    <span className="font-semibold text-foreground">{result.benchmark.peer_median_photos}</span> photos
+                    {result.photo_count < result.benchmark.peer_median_photos
+                      ? ' — a few more would put you right alongside them'
+                      : " — you're keeping pace nicely"}
+                  </p>
+                ) : result.photo_count < result.max_photos && (
                   <p className="text-[11px] text-amber-600 text-center">
                     Add {result.max_photos - result.photo_count} more photos to maximize your score
                   </p>
@@ -116,19 +130,64 @@ export function PhotoAnalysisPanel({ open, onOpenChange, loading, result, photoU
                       <span className={`absolute top-1 right-1 h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center ${GRADE_COLOR[p.grade] ?? 'bg-muted text-foreground'}`}>
                         {p.grade}
                       </span>
+                      {p.action && p.action !== 'keep' && (
+                        <span className={`absolute bottom-0 inset-x-0 text-[9px] font-bold text-center py-0.5 border-t ${ACTION_STYLE[p.action]?.cls ?? ''}`}>
+                          {ACTION_STYLE[p.action]?.label}
+                        </span>
+                      )}
                     </button>
                   )
                 })}
               </div>
 
+              {/* Reorder recommendation */}
+              {result.recommended_order && result.recommended_order.length > 1 &&
+                result.recommended_order.some((idx, i) => idx !== i + 1) && (
+                <div className="mt-2 rounded-md border border-primary/30 bg-primary/5 p-3 space-y-1.5">
+                  <p className="text-xs font-semibold text-foreground">Suggested photo order</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {result.recommended_order.map((idx, i) => (
+                      <span key={i} className="flex items-center gap-1.5">
+                        {photoUrls[idx - 1] ? (
+                          <img src={photoUrls[idx - 1]} alt={`Position ${i + 1}`} className="h-10 w-10 rounded object-cover border border-border" />
+                        ) : (
+                          <span className="h-10 w-10 rounded bg-muted flex items-center justify-center text-[10px]">{idx}</span>
+                        )}
+                        {i < result.recommended_order!.length - 1 && (
+                          <ArrowRight className="h-3 w-3 text-muted-foreground/50" />
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                  {result.reorder_reason && (
+                    <p className="text-xs text-foreground/80">{result.reorder_reason}</p>
+                  )}
+                </div>
+              )}
+
               {expandedIdx !== null && result.photos[expandedIdx] && (
                 <div className="mt-3 rounded-md border border-border bg-muted/30 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">Photo {result.photos[expandedIdx].index}</p>
-                    <Badge className={GRADE_COLOR[result.photos[expandedIdx].grade] ?? ''}>
-                      {result.photos[expandedIdx].grade} · {result.photos[expandedIdx].score}/100
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      {result.photos[expandedIdx].action && (
+                        <Badge variant="outline" className={ACTION_STYLE[result.photos[expandedIdx].action!]?.cls ?? ''}>
+                          {ACTION_STYLE[result.photos[expandedIdx].action!]?.label}
+                        </Badge>
+                      )}
+                      <Badge className={GRADE_COLOR[result.photos[expandedIdx].grade] ?? ''}>
+                        {result.photos[expandedIdx].grade} · {result.photos[expandedIdx].score}/100
+                      </Badge>
+                    </div>
                   </div>
+                  {result.photos[expandedIdx].action_reason && (
+                    <p className="text-xs text-foreground/80">{result.photos[expandedIdx].action_reason}</p>
+                  )}
+                  {result.photos[expandedIdx].action === 'edit' && result.photos[expandedIdx].edit_guidance && (
+                    <p className="text-xs rounded bg-blue-50 border border-blue-200 text-blue-900 p-2">
+                      How to fix it: {result.photos[expandedIdx].edit_guidance}
+                    </p>
+                  )}
                   {result.photos[expandedIdx].issues.length > 0 && (
                     <div>
                       <p className="text-xs font-medium text-red-700 mb-1">Issues</p>
