@@ -20,7 +20,9 @@ export default function AdminUsage() {
       supabase.from('optimizations').select('created_at').gte('created_at', since).limit(5000),
       supabase.from('user_profiles').select('created_at').gte('created_at', since).limit(5000),
       supabase.from('listings').select('score').not('score', 'is', null).limit(5000),
-      supabase.from('etsy_tokens').select('*', { count: 'exact', head: true }),
+      // Count on a granted column — column-level grants on etsy_tokens
+      // (migration 20260703000001) make `select *` fail for the client role.
+      supabase.from('etsy_tokens').select('user_id', { count: 'exact', head: true }),
     ])
 
     setOptsByDay(bucketByDay(opts ?? []))
