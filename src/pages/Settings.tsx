@@ -35,6 +35,7 @@ import { Link } from 'react-router-dom'
 import { SanityCheckSettings } from '@/components/settings/SanityCheckSettings'
 import { IntegrationsCard } from '@/components/account/IntegrationsCard'
 import { useViewMode } from '@/hooks/useViewMode'
+import { getThemeState, getShopMatchedTheme, lockTheme, resetToShopMatch, type ColorTheme } from '@/lib/themeAdaptation'
 
 const AI_TASKS: Array<{ key: AITask; label: string; helper: string }> = [
   { key: 'grading', label: 'Listing grading', helper: 'Scores each listing across photos, tags, title, description.' },
@@ -170,9 +171,10 @@ function AppearanceCard() {
   const [dark, setDark] = useState(() => {
     try { return localStorage.getItem('radariq_theme') === 'dark' } catch { return false }
   })
-  const [colorTheme, setColorTheme] = useState(() => {
-    try { return localStorage.getItem('radariq_color_theme') ?? 'forest' } catch { return 'forest' }
-  })
+  // Reflect the real adaptation state (manual lock vs auto-matched to shop).
+  const [themeState, setThemeState] = useState(() => getThemeState())
+  const colorTheme = themeState.active
+  const shopMatched = getShopMatchedTheme()
 
   const toggleDark = (val: boolean) => {
     setDark(val)
@@ -186,9 +188,13 @@ function AppearanceCard() {
   }
 
   const pickColor = (id: string) => {
-    setColorTheme(id)
-    document.documentElement.setAttribute('data-color-theme', id)
-    localStorage.setItem('radariq_color_theme', id)
+    lockTheme(id as ColorTheme)          // manual choice — permanently wins over auto
+    setThemeState(getThemeState())
+  }
+
+  const matchToShop = () => {
+    resetToShopMatch()                   // clear the lock, re-skin from shop aesthetic
+    setThemeState(getThemeState())
   }
 
   return (
@@ -235,8 +241,28 @@ function AppearanceCard() {
 
         {/* Theme color */}
         <div>
-          <p className="text-sm font-medium mb-2">Theme color</p>
-          <p className="text-xs text-muted-foreground mb-3">Changes the accent color across the interface. (Full palette coming soon.)</p>
+          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+            <p className="text-sm font-medium">Theme color</p>
+            {themeState.mode === 'auto' && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                <Sparkles className="h-3 w-3" /> Matched to your shop
+              </span>
+            )}
+            {themeState.mode === 'manual' && shopMatched && shopMatched !== colorTheme && (
+              <button
+                type="button"
+                onClick={matchToShop}
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                Match to my shop
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            {themeState.mode === 'auto'
+              ? "We picked an accent that fits your shop's vibe. Choose one below to lock in your own."
+              : 'Changes the accent color across the interface.'}
+          </p>
           <div className="flex items-center gap-3 flex-wrap">
             {THEME_COLORS.map(t => (
               <button
