@@ -13,6 +13,8 @@ import { BulkActionBar } from '@/components/listings/BulkActionBar'
 import { FixActionPills, useFixActionPills } from '@/components/listings/FixActionPills'
 import { RoadmapContextBanner } from '@/components/listings/RoadmapContextBanner'
 import { RoadmapFilterDropdown } from '@/components/listings/RoadmapFilterDropdown'
+import { ListingsInsightHeader } from '@/components/listings/ListingsInsightHeader'
+import { useViewMode } from '@/hooks/useViewMode'
 import { useRoadmapFilters } from '@/hooks/useRoadmapFilters'
 import { getRoadmapFilter } from '@/lib/roadmapFilterMap'
 import { useListingActions } from '@/hooks/useListingActions'
@@ -173,6 +175,8 @@ export default function Listings() {
   const roadmapFilter = getRoadmapFilter(roadmapParam)
   const [filters, setFilters] = useState<ListingFilters>(DEFAULT_FILTERS)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const { isAdvanced } = useViewMode()
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [activePreset, setActivePreset] = useState<FilterPreset>('none')
   const [activeTab, setActiveTab] = useState<StatTabId>('all')
@@ -378,6 +382,10 @@ export default function Listings() {
       <div className="flex-1 p-6 space-y-4">
         <SampleDataBanner />
 
+        {/* Radar's read — the intelligence layer leads; filters/table are the
+            drill-down, not the landing experience. */}
+        <ListingsInsightHeader listings={listings} onSelectTab={handleTabSelect} />
+
         {/* Roadmap context banner — only when navigated in from Score Roadmap. */}
         {fromRoadmap && !bannerDismissed && roadmapFilter && (
           <RoadmapContextBanner
@@ -407,24 +415,48 @@ export default function Listings() {
           ]}
         />
 
-        {/* SECTION 2 — Filter zones */}
-        <div className="space-y-3 rounded-lg border border-border/60 bg-card/30 p-3">
-          <SearchSortBar filters={filters} onChange={setFilters} />
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <FixActionPills activeKey={pillParam} onSelect={setPill} />
-            <RoadmapFilterDropdown activeKey={roadmapFilter?.pill_key ?? null} onSelect={setRoadmap} />
+        {/* SECTION 2 — Filter zones. In the default (simple) view the dense
+            machinery lives behind a disclosure so the page reads as insight →
+            cards, not insight → control panel; advanced mode shows it all. */}
+        {!isAdvanced && !filtersOpen ? (
+          <div className="flex items-center justify-between gap-2">
+            <SearchSortBar filters={filters} onChange={setFilters} />
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              Fine-tune filters{hasActive ? ' •' : ''}
+            </button>
           </div>
-          <div className="h-px bg-border/60" />
-          <QuickFiltersBar
-            listings={listings}
-            filters={filters}
-            onChangeFilters={setFilters}
-            activePreset={activePreset}
-            onPreset={setActivePreset}
-            onClearAll={clearAll}
-            hasActive={hasActive}
-          />
-        </div>
+        ) : (
+          <div className="space-y-3 rounded-lg border border-border/60 bg-card/30 p-3">
+            <SearchSortBar filters={filters} onChange={setFilters} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <FixActionPills activeKey={pillParam} onSelect={setPill} />
+              <RoadmapFilterDropdown activeKey={roadmapFilter?.pill_key ?? null} onSelect={setRoadmap} />
+            </div>
+            <div className="h-px bg-border/60" />
+            <QuickFiltersBar
+              listings={listings}
+              filters={filters}
+              onChangeFilters={setFilters}
+              activePreset={activePreset}
+              onPreset={setActivePreset}
+              onClearAll={clearAll}
+              hasActive={hasActive}
+            />
+            {!isAdvanced && (
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(false)}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                Hide filters
+              </button>
+            )}
+          </div>
+        )}
 
         {/* SECTION 3 — Results count line */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

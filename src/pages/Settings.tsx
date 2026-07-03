@@ -34,6 +34,7 @@ import { DEFAULT_AI_MODELS, type AITask, type AIModelTier } from '@/types'
 import { Link } from 'react-router-dom'
 import { SanityCheckSettings } from '@/components/settings/SanityCheckSettings'
 import { IntegrationsCard } from '@/components/account/IntegrationsCard'
+import { useViewMode } from '@/hooks/useViewMode'
 
 const AI_TASKS: Array<{ key: AITask; label: string; helper: string }> = [
   { key: 'grading', label: 'Listing grading', helper: 'Scores each listing across photos, tags, title, description.' },
@@ -165,6 +166,7 @@ const THEME_COLORS = [
 ]
 
 function AppearanceCard() {
+  const { mode: viewMode, setMode: setViewMode } = useViewMode()
   const [dark, setDark] = useState(() => {
     try { return localStorage.getItem('radariq_theme') === 'dark' } catch { return false }
   })
@@ -198,6 +200,30 @@ function AppearanceCard() {
         <CardDescription>Choose your preferred look and feel.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Simple vs Advanced view (Section 7 two-mode system) */}
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Detail level</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Simple keeps things focused on your next moves; Advanced shows every score, filter, and breakdown.
+            </p>
+          </div>
+          <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+            {(['simple', 'advanced'] as const).map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setViewMode(m)}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  viewMode === m ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {m === 'simple' ? 'Simple' : 'Advanced'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Dark mode */}
         <div className="flex items-center justify-between">
           <div>
