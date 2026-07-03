@@ -6,7 +6,6 @@ import {
   AlertTriangle, Store, Zap, CheckCircle2, Sparkles, Eye,
 } from 'lucide-react'
 import { KPICard } from '@/components/dashboard/KPICard'
-import { StoreHealthScoreCard } from '@/components/dashboard/StoreHealthScoreCard'
 import { EchoPicksPanel } from '@/components/dashboard/EchoPicksPanel'
 import { DailyBriefingCard } from '@/components/dashboard/DailyBriefingCard'
 import { OptimizationActivityFeed } from '@/components/dashboard/OptimizationActivityFeed'
@@ -25,10 +24,8 @@ import { detectShopType } from '@/lib/shopType'
 import { ScoreClimbBanner } from '@/components/dashboard/ScoreClimbBanner'
 import { useStoreHealthHistory, usePendingFixCountSince } from '@/hooks/useStoreHealthHistory'
 import { useShopIntelligence } from '@/hooks/useShopIntelligence'
-import { computeMomentum } from '@/lib/momentum'
 import { MilestoneToast, useMilestone } from '@/components/ui/MilestoneToast'
 import { healthGradeColor } from '@/lib/healthScore'
-import { usePendingFixActions } from '@/hooks/useFixActions'
 
 function numToGrade(n: number | null): string {
   if (n == null) return '—'
@@ -47,14 +44,6 @@ function readSnapshot(): DashboardSnapshot | null {
 }
 function writeSnapshot(avgGrade: number) {
   localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ avg_grade: avgGrade, timestamp: new Date().toISOString() }))
-}
-
-// Priority action urgency → dot color
-function urgencyDot(grade?: number | null) {
-  if (grade == null) return 'bg-muted-foreground/40'
-  if (grade < 50)  return 'bg-red-500'
-  if (grade < 70)  return 'bg-amber-500'
-  return 'bg-emerald-500'
 }
 
 export default function Dashboard() {
@@ -141,10 +130,8 @@ export default function Dashboard() {
     return computeStoreHealthScore(dashboardRows, syncStats.media, syncStats.listingCount, shopType)
   }, [dashboardRows, syncStats])
 
-  const momentum = useMemo(() => computeMomentum(shopSnapshotHistory), [shopSnapshotHistory])
-  const { rows: historyRows, delta: confirmedDelta, latest: latestHistory, record: recordHealth } = useStoreHealthHistory()
+  const { delta: confirmedDelta, latest: latestHistory, record: recordHealth } = useStoreHealthHistory()
   const pendingFixCount = usePendingFixCountSince(latestHistory?.recorded_at ?? null)
-  const { rows: fixActions } = usePendingFixActions()
 
   useEffect(() => {
     if (dashboardRows.length === 0) return
@@ -186,14 +173,6 @@ export default function Dashboard() {
     }
     return "Radar is scanning your shop for opportunities."
   }, [confirmedDelta, pendingFixCount, needsAttentionCount])
-
-  // Priority actions: top 3 fix actions by severity
-  const priorityActions = useMemo(() => {
-    const sev: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
-    return [...fixActions]
-      .sort((a, b) => (sev[b.severity] ?? 0) - (sev[a.severity] ?? 0))
-      .slice(0, 5)
-  }, [fixActions])
 
   // This week's wins
   const recentWins = useMemo(() => {
@@ -409,70 +388,12 @@ export default function Dashboard() {
                 <DailyBriefingCard storeId={connectedStore.id} pendingFixCount={pendingFixCount ?? 0} />
               )}
 
-              {/* Priority Actions */}
-              {priorityActions.length > 0 && (
-                <div className="rounded-2xl border border-border bg-surface-1 shadow-warm-sm overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                    <h2 className="text-base font-bold text-foreground" style={{ fontFamily: 'Bricolage Grotesque, system-ui, sans-serif' }}>
-                      Your Priority Actions
-                    </h2>
-                    <button
-                      onClick={() => navigate('/app/actions')}
-                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-                    >
-                      View all <ArrowRight className="h-3 w-3" />
-                    </button>
-                  </div>
-                  <div className="divide-y divide-[#F0EDE9]">
-                    {priorityActions.map(action => {
-                      const listing = action.listing
-                      const isAuto = action.mode === 'auto'
-                      const gradePct = (action.listing as unknown as { current_grade?: number | null } | null)?.current_grade
-                      return (
-                        <div key={action.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#FAF9F6] transition-colors">
-                          {/* Thumbnail */}
-                          <div className="h-11 w-11 rounded-xl overflow-hidden shrink-0 bg-surface-2 border border-border">
-                            {listing?.thumbnail_url ? (
-                              <img src={listing.thumbnail_url} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <ShoppingBag className="h-4 w-4 m-3 text-muted-foreground" />
-                            )}
-                          </div>
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
-                              <span className={`h-2 w-2 rounded-full shrink-0 ${urgencyDot(gradePct)}`} />
-                              {listing?.title ?? 'Listing'}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {action.rationale ?? `${action.dimension} — Grade ${numToGrade(gradePct ?? null)}`}
-                            </p>
-                          </div>
-                          {/* CTA */}
-                          <button
-                            onClick={() => listing?.id ? navigate(`/app/listings/${listing.id}`) : navigate('/app/actions')}
-                            className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                              isAuto
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                : 'border border-primary text-primary hover:bg-primary/8'
-                            }`}
-                          >
-                            {isAuto ? 'Optimize' : 'Review'}
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Store Health Score (detailed) */}
-              <StoreHealthScoreCard
-                score={storeHealth}
-                scoreTrend={intelligence?.score_trend ?? null}
-                marketScore={intelligence?.overall_market_score ?? null}
-                momentumTier={momentum.tier}
-              />
+              {/* Priority actions — single consolidated queue. The old
+                  "Your Priority Actions" list duplicated EchoPicksPanel
+                  near-verbatim (same usePendingFixActions rows), and the
+                  detailed StoreHealthScoreCard repeated the hero ring; score
+                  detail lives on ScoreRoadmap, linked from the hero. */}
+              <EchoPicksPanel />
 
               {/* Activity */}
               <OptimizationActivityFeed />
@@ -519,9 +440,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-
-              {/* Echo Picks (AI suggestions) */}
-              <EchoPicksPanel />
 
               {/* Optimization Streak */}
               {recentOptimizations.length > 0 && (

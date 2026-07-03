@@ -24,9 +24,16 @@ export function TopImpactActions() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
+  // Rank by expected score impact but never hide pending actions: rows
+  // without a score_delta (generator didn't estimate one) sort below scored
+  // ones instead of being filtered out. Filtering them out made this panel
+  // claim "no pending actions" while the Dashboard showed listings needing
+  // attention for the same shop.
+  const sevRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
   const topImpact = [...rows]
-    .filter(r => (r.score_delta ?? 0) > 0)
-    .sort((a, b) => (b.score_delta ?? 0) - (a.score_delta ?? 0))
+    .sort((a, b) =>
+      (b.score_delta ?? 0) - (a.score_delta ?? 0) ||
+      (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0))
     .slice(0, 8)
 
   const handleApply = async (row: FixActionRow) => {
@@ -82,8 +89,8 @@ export function TopImpactActions() {
             <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-emerald-500/12 mb-3">
               <Sparkles className="h-4 w-4 text-emerald-400" />
             </div>
-            <p className="text-sm font-semibold text-foreground">No pending actions</p>
-            <p className="text-xs mt-1 text-muted-foreground/60">Your shop is in great shape.</p>
+            <p className="text-sm font-semibold text-foreground">Nothing waiting in your queue</p>
+            <p className="text-xs mt-1 text-muted-foreground/60">New opportunities land here after each nightly scan.</p>
           </div>
         ) : (
           topImpact.map(row => {

@@ -178,14 +178,29 @@ async function processOptimization(supabase: any, opt: any) {
         headline: `Listing score jumped +${scoreDelta} after optimization`,
         metric: scoreDelta!,
       });
-      if (salesDelta > 0 && preSales === 0) milestones.push({
-        kind: `first_sale_w${w}`,
-        headline: `First sale recorded after optimization`,
-        metric: salesDelta,
-      });
+      // First sale is a once-per-listing milestone: without the guard, every
+      // window (7/14/30/60/90d) emitted an identical window-less headline.
+      if (salesDelta > 0 && preSales === 0) {
+        const { data: existingFirstSale } = await supabase.from("wins_feed")
+          .select("id")
+          .eq("user_id", opt.user_id)
+          .eq("listing_id", opt.listing_id)
+          .like("kind", "first_sale%")
+          .limit(1)
+          .maybeSingle();
+        if (!existingFirstSale) {
+          milestones.push({
+            kind: "first_sale",
+            headline: `First sale recorded after optimization`,
+            metric: salesDelta,
+          });
+        }
+      }
 
       for (const m of milestones) {
-        const { error } = await supabase.from("wins_feed").insert({
+        // Upsert on (attribution_id, kind) so nightly/admin re-runs never
+        // duplicate a win already on the feed.
+        const { error } = await supabase.from("wins_feed").upsert({
           user_id: opt.user_id,
           listing_id: opt.listing_id,
           attribution_id: upserted.id,
@@ -193,7 +208,7 @@ async function processOptimization(supabase: any, opt: any) {
           headline: m.headline,
           metric_value: m.metric,
           window_days: w,
-        });
+        }, { onConflict: "attribution_id,kind", ignoreDuplicates: true });
         if (!error) winsEmitted++;
       }
     }
