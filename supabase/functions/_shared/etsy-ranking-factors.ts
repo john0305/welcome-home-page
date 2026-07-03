@@ -552,6 +552,25 @@ const RENEWAL_TIMING: FactorDef = {
   },
 };
 
+const EXTERNAL_TRAFFIC_SIGNAL: FactorDef = {
+  key: "external_traffic_signal",
+  label: "Off-Etsy traffic signal",
+  dimension: "shop",
+  scope: "shop",
+  mode: "inform",
+  weight: 8,
+  safe_auto_apply: false,
+  pipeline_computed: true,
+  description:
+    "Something changed in the traffic reaching your shop from outside Etsy (social, your own site) — surfaced from your connected data sources.",
+  check: (ctx) => ({
+    passes: true, // pass-through — computed by sync-integration-data
+    severity: "medium",
+    current_value: null,
+    rationale: "External integration signal.",
+  }),
+};
+
 // ─── Registry ───────────────────────────────────────────────────────────────
 
 export const ETSY_RANKING_FACTORS: ReadonlyArray<FactorDef> = [
@@ -564,6 +583,7 @@ export const ETSY_RANKING_FACTORS: ReadonlyArray<FactorDef> = [
   MARKET_TITLE_LENGTH,
   TRACTION_DECLINE,
   RENEWAL_TIMING,
+  EXTERNAL_TRAFFIC_SIGNAL,
 ];
 
 const BY_KEY = new Map(ETSY_RANKING_FACTORS.map((f) => [f.key, f]));

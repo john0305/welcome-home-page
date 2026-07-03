@@ -75,6 +75,16 @@ project_id = "brqkcbdbsciwfmnipzbx"
 [functions.etsy-oauth]
   verify_jwt = false
 
+# Data-integration OAuth — GET callback arrives from the provider with no JWT;
+# the authorize action checks the user JWT in-function
+[functions.integration-oauth]
+  verify_jwt = false
+
+# Daily integration metric pull (per-connection); service/cron gated in-function
+[functions.sync-integration-data]
+  schedule = "30 1 * * *"
+  verify_jwt = false
+
 # Market intelligence — user JWT (or service role for pipeline calls)
 [functions.onboarding-pipeline]
   verify_jwt = false

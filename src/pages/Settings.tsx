@@ -33,6 +33,7 @@ import { PlanBadge } from '@/components/account/PlanBadge'
 import { DEFAULT_AI_MODELS, type AITask, type AIModelTier } from '@/types'
 import { Link } from 'react-router-dom'
 import { SanityCheckSettings } from '@/components/settings/SanityCheckSettings'
+import { IntegrationsCard } from '@/components/account/IntegrationsCard'
 
 const AI_TASKS: Array<{ key: AITask; label: string; helper: string }> = [
   { key: 'grading', label: 'Listing grading', helper: 'Scores each listing across photos, tags, title, description.' },
@@ -793,6 +794,8 @@ export default function Settings() {
           <TabsContent value="preferences" className="space-y-4">
             {/* ── Appearance ── */}
             <AppearanceCard />
+            {/* ── Third-party data sources (Section 10) ── */}
+            <IntegrationsCard />
             <Card>
               <CardHeader><CardTitle className="text-base">Optimization Settings</CardTitle></CardHeader>
               <CardContent className="space-y-4">

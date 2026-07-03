@@ -154,6 +154,17 @@ export const FACTOR_META: ReadonlyArray<FactorMeta> = [
     description:
       "This listing renews soon. Whether to renew as-is or refresh it first depends on how its traffic is trending.",
   },
+  {
+    key: "external_traffic_signal",
+    label: "Off-Etsy traffic signal",
+    dimension: "shop",
+    scope: "shop",
+    mode: "inform",
+    weight: 8,
+    safe_auto_apply: false,
+    description:
+      "Traffic reaching your shop from outside Etsy changed meaningfully — surfaced from your connected data sources.",
+  },
 ];
 
 const BY_KEY = new Map(FACTOR_META.map((f) => [f.key, f]));
