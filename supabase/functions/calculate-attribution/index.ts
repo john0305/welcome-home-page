@@ -2,6 +2,7 @@
 // using existing listing_snapshots + shop_snapshots data. Insert-only on
 // snapshots — this function only writes to performance_attribution and wins_feed.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { callerUserId, isAdminCall, isServiceCall } from "../_shared/service-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +21,22 @@ Deno.serve(async (req) => {
 
   let body: { optimization_id?: string; user_id?: string; run_all?: boolean } = {};
   try { body = await req.json(); } catch { /* ignore */ }
+
+  // Callers: service role (pipeline) and admins get full access; an
+  // authenticated user may only recompute their own attribution.
+  const privileged = isServiceCall(req) || (await isAdminCall(req));
+  if (!privileged) {
+    const caller = await callerUserId(req);
+    if (!caller) return json({ error: "Unauthorized" }, 401);
+    if (body.run_all) return json({ error: "Forbidden" }, 403);
+    if (body.user_id && body.user_id !== caller) return json({ error: "Forbidden" }, 403);
+    body.user_id = body.user_id ?? caller;
+    if (body.optimization_id) {
+      const { data: owned } = await supabase.from("optimizations")
+        .select("id").eq("id", body.optimization_id).eq("user_id", caller).maybeSingle();
+      if (!owned) return json({ error: "Forbidden" }, 403);
+    }
+  }
 
   try {
     let optimizations: any[] = [];

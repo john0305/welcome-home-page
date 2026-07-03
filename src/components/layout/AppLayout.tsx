@@ -19,6 +19,7 @@ import { MorningSummaryToast } from '@/components/actions/MorningSummaryToast'
 
 import { ScoreGainToast } from '@/components/dashboard/ScoreGainToast'
 import { useScoreChangeWatcher } from '@/hooks/useScoreChangeWatcher'
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner'
 
 function NotificationBridge() {
   useRealNotifications()
@@ -56,7 +57,9 @@ export function AppLayout() {
     <NotificationBridge />
     <OnboardingRedirects />
     <MorningSummaryToast />
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <ImpersonationBanner />
+    <div className="flex flex-1 overflow-hidden">
       <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
       <main className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Both headers live OUTSIDE the scroll container so they never scroll away */}
@@ -82,6 +85,7 @@ export function AppLayout() {
       {/* AchievementToast removed — achievements disabled pre-launch */}
       <ScoreGainToast />
       <MobileBottomNav />
+    </div>
     </div>
     </ListingActionsProvider>
     </MobileHeaderProvider>

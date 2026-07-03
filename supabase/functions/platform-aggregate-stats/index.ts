@@ -1,6 +1,8 @@
 // Recomputes platform-wide medians from non-anomalous attribution rows and
 // writes them to the singleton platform_stats_cache row.
+// Callers: admin UI (AdminPerformance) and internal pipeline — admin or service role only.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isAdminCall, isServiceCall } from "../_shared/service-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +12,13 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  if (!isServiceCall(req) && !(await isAdminCall(req))) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

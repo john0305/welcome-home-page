@@ -16,6 +16,7 @@
  *  - listings.state = 'active' (not 'status')
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isServiceOrCronCall } from "../_shared/service-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,6 +77,13 @@ interface CompetitorAlert {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Internal pipeline function: all legitimate callers (nightly-action-scan,
+  // apply-fix-action) pass the service-role bearer. It accepts an arbitrary
+  // user_id and spends AI quota, so it must never be anon-invocable.
+  if (!isServiceOrCronCall(req)) {
+    return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+  }
 
   const startMs = Date.now();
 

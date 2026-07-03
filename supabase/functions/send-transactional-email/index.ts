@@ -3,6 +3,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { isServiceCall } from '../_shared/service-auth.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
@@ -25,9 +26,12 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// Auth: the gateway's verify_jwt also passes the PUBLIC anon key, so it is NOT
+// sufficient — anyone with the anon key could send from RadarIQ's domain.
+// In-function rules below: service-role callers get full access; authenticated
+// users may only trigger the signup-flow templates, with the welcome email
+// bound to their own address; anon callers are rejected.
+const USER_CALLABLE_TEMPLATES = new Set(['welcome', 'new-user-signup-admin'])
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -119,6 +123,31 @@ Deno.serve(async (req) => {
 
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+  // Enforce caller rules (see auth note above)
+  if (!isServiceCall(req)) {
+    const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
+    const { data: userData } = jwt ? await supabase.auth.getUser(jwt) : { data: null }
+    const callerEmail = userData?.user?.email?.toLowerCase()
+    if (!callerEmail) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const templateAllowed = USER_CALLABLE_TEMPLATES.has(templateName)
+    // Templates with a fixed `to` (admin notifications) don't take a caller
+    // recipient; all others must send to the caller's own address.
+    const recipientAllowed = template.to
+      ? true
+      : effectiveRecipient.toLowerCase() === callerEmail
+    if (!templateAllowed || !recipientAllowed) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+  }
 
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase

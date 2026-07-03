@@ -24,14 +24,20 @@ project_id = "brqkcbdbsciwfmnipzbx"
 [functions.sync-checkout-session]
   verify_jwt = false
 
-# Cron / scheduled jobs — no user JWT; protected by CRON_SECRET header inside the function
+# Cron / scheduled jobs — no user JWT; protected by CRON_SECRET/service-role check inside
+# the function. Schedules are declared here (native Supabase Functions cron) so the trigger
+# mechanism is deterministic and in-repo — previously nothing verifiably invoked these.
+# Timing: sync (1:00) feeds the 2:00 action scan; decay (2:30) and optimization (3:00) follow it.
 [functions.decay-grades]
+  schedule = "30 2 * * *"
   verify_jwt = false
 
 [functions.sync-all-stores]
+  schedule = "0 1 * * *"
   verify_jwt = false
 
 [functions.scheduled-optimization]
+  schedule = "0 3 * * *"
   verify_jwt = false
 
 # Nightly grader — runs at 2:00 AM UTC

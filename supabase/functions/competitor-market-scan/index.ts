@@ -11,6 +11,7 @@
  * Always returns HTTP 200. Failures use { success: false, error: '...' }.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isServiceOrCronCall } from "../_shared/service-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -150,6 +151,13 @@ function deriveSearchTerms(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Internal pipeline function: callers (nightly-action-scan, onboarding-pipeline)
+  // pass the service-role bearer. It accepts an arbitrary user_id and spends
+  // Etsy API quota, so it must never be anon-invocable.
+  if (!isServiceOrCronCall(req)) {
+    return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+  }
 
   const startMs = Date.now();
 
