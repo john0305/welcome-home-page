@@ -9,28 +9,30 @@ const badgeVariants = cva(
       variant: {
         default:     'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
         secondary:   'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        destructive: 'border-transparent bg-destructive/20 text-red-400 border-destructive/30',
+        destructive: 'border border-red-200 bg-red-50 text-red-700',
         outline:     'border-border text-foreground',
 
-        // Status — dark-mode correct alpha backgrounds
-        success: 'border-transparent bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-        warning: 'border-transparent bg-amber-500/15 text-amber-400 border border-amber-500/25',
-        danger:  'border-transparent bg-red-500/15 text-red-400 border border-red-500/25',
-        info:    'border-transparent bg-blue-500/15 text-blue-400 border border-blue-500/25',
+        // Status — warm, AA-compliant on the light surface (dark overrides in index.css remap the -700 text)
+        success: 'border border-emerald-200 bg-emerald-50 text-emerald-700',
+        warning: 'border border-amber-200 bg-amber-50 text-amber-800',
+        danger:  'border border-red-200 bg-red-50 text-red-700',
+        info:    'border border-primary/25 bg-primary/10 text-primary',
 
-        // Grade variants — dark-mode correct
-        'grade-aplus': 'border-transparent bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-        'grade-a':     'border-transparent bg-green-500/15 text-green-400 border border-green-500/25',
-        'grade-b':     'border-transparent bg-primary/15 text-primary border border-primary/25',
-        'grade-c':     'border-transparent bg-amber-500/15 text-amber-400 border border-amber-500/25',
-        'grade-d':     'border-transparent bg-orange-500/15 text-orange-400 border border-orange-500/25',
-        'grade-f':     'border-transparent bg-red-500/15 text-red-400 border border-red-500/25',
+        // Grade variants — warm encouraging ramp: emerald → teal → amber → clay.
+        // F is warm clay (orange-800), never punishing red. All pass WCAG AA on
+        // the light surface; index.css dark overrides handle dark mode.
+        'grade-aplus': 'border border-emerald-300 bg-emerald-50 text-emerald-700',
+        'grade-a':     'border border-emerald-200 bg-emerald-50 text-emerald-700',
+        'grade-b':     'border border-primary/25 bg-primary/10 text-primary',
+        'grade-c':     'border border-amber-200 bg-amber-50 text-amber-800',
+        'grade-d':     'border border-orange-200 bg-orange-50 text-orange-700',
+        'grade-f':     'border border-orange-300 bg-orange-50 text-orange-800',
 
         // Product / plan badges
-        etsy:  'border-transparent bg-etsy/15 text-etsy-light border border-etsy/25',
+        etsy:  'border border-etsy/25 bg-etsy/10 text-etsy-dark',
         free:  'border-transparent bg-border/60 text-muted-foreground',
-        pro:   'border-transparent bg-primary/15 text-primary border border-primary/25',
-        admin: 'border-transparent bg-amber-500/15 text-amber-400',
+        pro:   'border border-primary/25 bg-primary/10 text-primary',
+        admin: 'border border-amber-200 bg-amber-50 text-amber-800',
         count: 'rounded-md bg-muted text-muted-foreground px-1.5 text-[10px]',
       },
     },

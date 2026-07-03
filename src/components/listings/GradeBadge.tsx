@@ -40,13 +40,15 @@ export function GradeBadge({ score, size = 'md', showScore = true, className }: 
 }
 
 export function GradeDot({ score }: { score: number }) {
+  // Warm ramp — the low end is clay/amber, never red (Section 7a: honest but
+  // encouraging, "big upside" not "fail").
   const colorMap = {
     high: 'bg-emerald-500',
-    good: 'bg-green-500',
+    good: 'bg-emerald-400',
     ok: 'bg-primary',
     fair: 'bg-amber-500',
-    poor: 'bg-orange-500',
-    bad: 'bg-red-500',
+    poor: 'bg-orange-400',
+    bad: 'bg-orange-500',
   }
   const key = score >= 90 ? 'high' : score >= 80 ? 'good' : score >= 70 ? 'ok' : score >= 60 ? 'fair' : score >= 50 ? 'poor' : 'bad'
   return <span className={cn('inline-block h-2 w-2 rounded-full', colorMap[key])} />

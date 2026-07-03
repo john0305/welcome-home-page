@@ -158,11 +158,13 @@ export function getGradeLabel(score: number): GradeLabel {
 }
 
 export function getGradeColor(score: number): string {
-  if (score >= 90) return 'text-emerald-600 bg-emerald-50 border-emerald-200'
-  if (score >= 80) return 'text-green-600 bg-green-50 border-green-200'
-  if (score >= 70) return 'text-blue-600 bg-blue-50 border-blue-200'
-  if (score >= 60) return 'text-amber-600 bg-amber-50 border-amber-200'
-  return 'text-orange-600 bg-orange-50 border-orange-200'
+  // Warm, on-brand ramp (emerald → teal → amber → clay); AA-compliant text
+  // weights. No blue (off-brand) and no punishing red on the low end.
+  if (score >= 90) return 'text-emerald-700 bg-emerald-50 border-emerald-300'
+  if (score >= 80) return 'text-emerald-700 bg-emerald-50 border-emerald-200'
+  if (score >= 70) return 'text-primary bg-primary/10 border-primary/20'
+  if (score >= 60) return 'text-amber-800 bg-amber-50 border-amber-200'
+  return 'text-orange-800 bg-orange-50 border-orange-300'
 }
 
 // ─── Optimization ─────────────────────────────────────────────────────────────
