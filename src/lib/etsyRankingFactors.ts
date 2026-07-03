@@ -132,6 +132,28 @@ export const FACTOR_META: ReadonlyArray<FactorMeta> = [
     description:
       "Top-ranked listings in your niche use more photos. Adding more lift conversion and search rank.",
   },
+  {
+    key: "traction_decline",
+    label: "Views trending down",
+    dimension: "content",
+    scope: "listing",
+    mode: "inform",
+    weight: 14,
+    safe_auto_apply: false,
+    description:
+      "This listing's views have dropped versus the previous two weeks — an early warning worth a look before it shows up in sales.",
+  },
+  {
+    key: "renewal_timing",
+    label: "Renewal coming up",
+    dimension: "content",
+    scope: "listing",
+    mode: "inform",
+    weight: 10,
+    safe_auto_apply: false,
+    description:
+      "This listing renews soon. Whether to renew as-is or refresh it first depends on how its traffic is trending.",
+  },
 ];
 
 const BY_KEY = new Map(FACTOR_META.map((f) => [f.key, f]));

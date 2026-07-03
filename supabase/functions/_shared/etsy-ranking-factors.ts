@@ -100,6 +100,13 @@ export interface FactorDef {
   weight: number;
   /** Safe to auto-apply without explicit approval (subject to user opt-in). */
   safe_auto_apply: boolean;
+  /**
+   * True for factors whose actions are created AND resolved by a dedicated
+   * pipeline step (their check() is a pass-through). The nightly scan's
+   * re-check step must skip these — a pass-through check would otherwise
+   * supersede them every night.
+   */
+  pipeline_computed?: boolean;
   description: string;
   check: (ctx: ListingCtx | ShopCtx) => Promise<CheckResult> | CheckResult;
   generateFix?: (
@@ -495,6 +502,56 @@ const MARKET_TITLE_LENGTH: FactorDef = {
   },
 };
 
+// ─── Own-data trend factors (Section 4, compliance-first) ────────────────────
+// Computed by nightly-action-scan from the seller's OWN listing_snapshots
+// history — no competitor or marketplace scanning (see
+// documents/etsy_compliance_trend_design.md). Registered here as pass-through
+// factors so every surface understands the keys.
+
+const TRACTION_DECLINE: FactorDef = {
+  key: "traction_decline",
+  label: "Views trending down",
+  dimension: "content",
+  scope: "listing",
+  mode: "inform",
+  weight: 14,
+  safe_auto_apply: false,
+  pipeline_computed: true,
+  description:
+    "This listing's views have dropped meaningfully versus the previous two weeks — an early warning before it shows up in sales.",
+  check: (ctx) => {
+    if (!isListing(ctx)) return { passes: true, severity: "low", current_value: null, rationale: "" };
+    return {
+      passes: true, // pass-through — computed from listing_snapshots by the nightly scan
+      severity: "medium",
+      current_value: null,
+      rationale: "Own-data traction trend.",
+    };
+  },
+};
+
+const RENEWAL_TIMING: FactorDef = {
+  key: "renewal_timing",
+  label: "Renewal coming up",
+  dimension: "content",
+  scope: "listing",
+  mode: "inform",
+  weight: 10,
+  safe_auto_apply: false,
+  pipeline_computed: true,
+  description:
+    "This listing renews soon. Whether to renew as-is or refresh it first depends on how its traffic is trending.",
+  check: (ctx) => {
+    if (!isListing(ctx)) return { passes: true, severity: "low", current_value: null, rationale: "" };
+    return {
+      passes: true, // pass-through — computed from ending_at + snapshots by the nightly scan
+      severity: "low",
+      current_value: null,
+      rationale: "Own-data renewal timing.",
+    };
+  },
+};
+
 // ─── Registry ───────────────────────────────────────────────────────────────
 
 export const ETSY_RANKING_FACTORS: ReadonlyArray<FactorDef> = [
@@ -505,6 +562,8 @@ export const ETSY_RANKING_FACTORS: ReadonlyArray<FactorDef> = [
   REVIEW_HEALTH,
   MARKET_TAG_GAP,
   MARKET_TITLE_LENGTH,
+  TRACTION_DECLINE,
+  RENEWAL_TIMING,
 ];
 
 const BY_KEY = new Map(ETSY_RANKING_FACTORS.map((f) => [f.key, f]));

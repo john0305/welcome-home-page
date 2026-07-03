@@ -172,6 +172,10 @@ async function scanUser(
   await runWithConcurrency(pendings || [], 5, async (p) => {
     const factor = getFactor(p.factor_key);
     if (!factor) return;
+    // Pipeline-computed factors (pass-through checks) are created and
+    // resolved by their own pipeline steps — a re-check here would
+    // supersede them every night.
+    if (factor.pipeline_computed) return;
     const ctx = factor.scope === "listing"
       ? (p.listing_id ? await loadListingCtx(supabase, userId, p.listing_id) : null)
       : await loadShopCtx(supabase, userId, p.etsy_shop_id ?? undefined);
@@ -227,6 +231,16 @@ async function scanUser(
     });
   }
 
+
+  // ── Step 3.5: own-data trend scan (traction decline + renewal timing) ─────
+  // Uses ONLY the seller's own listing_snapshots history — no competitor or
+  // marketplace scanning (see documents/etsy_compliance_trend_design.md).
+  try {
+    const trendActions = await scanOwnDataTrends(supabase, userId, source);
+    summary.actions_generated += trendActions;
+  } catch (e) {
+    console.error("own-data trend scan failed", userId, e);
+  }
 
   // ── Step 4: auto-apply opted-in safe fixes ───────────────────────────────
   const { data: prefs } = await supabase
@@ -427,6 +441,162 @@ async function generateAndInsert(
     return null;
   }
   return { mode };
+}
+
+// ── Own-data trend scan (Section 4, compliance-first) ───────────────────────
+// Early-warning traction decline + renewal-timing advice, computed purely from
+// the seller's own listing_snapshots (cumulative views/favorites recorded
+// daily). Inserts inform-mode fix_actions with the real numbers in the
+// rationale, phrased as a helpful nudge, never a scorecard.
+async function scanOwnDataTrends(
+  supabase: ReturnType<typeof makeServiceClient>,
+  userId: string,
+  source: string,
+): Promise<number> {
+  const DAY = 86_400_000;
+  const now = Date.now();
+  const since = new Date(now - 29 * DAY).toISOString().slice(0, 10);
+
+  const [{ data: listings }, { data: snaps }] = await Promise.all([
+    supabase.from("listings")
+      .select("id, title, ending_at, views")
+      .eq("user_id", userId).eq("state", "active"),
+    supabase.from("listing_snapshots")
+      .select("listing_id, recorded_on, views, favorites")
+      .eq("user_id", userId).gte("recorded_on", since)
+      .order("recorded_on", { ascending: true }),
+  ]);
+  if (!listings?.length || !snaps?.length) return 0;
+
+  // Group snapshots per listing (cumulative counters, oldest → newest).
+  const byListing = new Map<string, { recorded_on: string; views: number }[]>();
+  for (const s of snaps as { listing_id: string; recorded_on: string; views: number | null }[]) {
+    if (s.views == null) continue;
+    const arr = byListing.get(s.listing_id) ?? [];
+    arr.push({ recorded_on: s.recorded_on, views: Number(s.views) });
+    byListing.set(s.listing_id, arr);
+  }
+
+  let inserted = 0;
+  const midDate = new Date(now - 14 * DAY).toISOString().slice(0, 10);
+
+  // Expire stale pending trend actions so they resolve themselves:
+  // renewal_timing past its window, traction_decline where traffic recovered.
+  const { data: pendingTrend } = await supabase.from("fix_actions")
+    .select("id, factor_key, listing_id")
+    .eq("user_id", userId).eq("status", "pending")
+    .in("factor_key", ["traction_decline", "renewal_timing"]);
+  const listingById = new Map(
+    (listings as { id: string; ending_at: string | null }[]).map((l) => [l.id, l]),
+  );
+  for (const p of pendingTrend ?? []) {
+    const l = p.listing_id ? listingById.get(p.listing_id) : null;
+    let stale = !l; // listing gone/inactive
+    if (l && p.factor_key === "renewal_timing") {
+      const endingAt = l.ending_at ? new Date(l.ending_at).getTime() : null;
+      stale = !endingAt || endingAt <= now || endingAt - now > 30 * DAY;
+    }
+    if (l && p.factor_key === "traction_decline") {
+      const series = byListing.get(l.id) ?? [];
+      if (series.length >= 10) {
+        const first = series[0];
+        const last = series[series.length - 1];
+        let mid = series[0];
+        for (const s of series) {
+          if (s.recorded_on <= midDate) mid = s;
+          else break;
+        }
+        const priorViews = Math.max(0, mid.views - first.views);
+        const recentViews = Math.max(0, last.views - mid.views);
+        stale = !(priorViews >= 30 && recentViews < priorViews * 0.7); // recovered
+      }
+    }
+    if (stale) {
+      await supabase.from("fix_actions")
+        .update({ status: "superseded", superseded_reason: "resolved_externally" })
+        .eq("id", p.id);
+    }
+  }
+
+  for (const l of listings as { id: string; title: string | null; ending_at: string | null; views: number | null }[]) {
+    const series = byListing.get(l.id) ?? [];
+    if (series.length < 10) continue; // not enough own history to trend honestly
+
+    const first = series[0];
+    const last = series[series.length - 1];
+    // Closest snapshot to the 14-day midpoint splits the window.
+    let mid = series[0];
+    for (const s of series) {
+      if (s.recorded_on <= midDate) mid = s;
+      else break;
+    }
+    const priorViews = Math.max(0, mid.views - first.views);
+    const recentViews = Math.max(0, last.views - mid.views);
+
+    const declining = priorViews >= 30 && recentViews < priorViews * 0.7;
+    const rising = priorViews >= 10 && recentViews > priorViews * 1.2;
+    const dropPct = priorViews > 0 ? Math.round((1 - recentViews / priorViews) * 100) : 0;
+
+    const title = (l.title ?? "this listing").slice(0, 60);
+
+    // Traction decline early warning
+    if (declining) {
+      const recent = await supabase.from("fix_actions").select("id")
+        .eq("user_id", userId).eq("listing_id", l.id)
+        .eq("factor_key", "traction_decline")
+        .gte("created_at", new Date(now - 14 * DAY).toISOString())
+        .limit(1).maybeSingle();
+      if (!recent.data) {
+        const { error } = await supabase.from("fix_actions").insert({
+          user_id: userId,
+          listing_id: l.id,
+          factor_key: "traction_decline",
+          dimension: "content",
+          mode: "inform",
+          severity: dropPct >= 50 ? "high" : "medium",
+          current_value: { recent_14d_views: recentViews, prior_14d_views: priorViews },
+          rationale: `"${title}" caught ${recentViews} views these past two weeks, down from ${priorViews} the two weeks before. Worth a look before it shows up in sales — a title or photo refresh usually turns this around.`,
+          evidence: { drop_pct: dropPct, window_days: 14, data_source: "own_listing_snapshots" },
+          source,
+          status: "pending",
+        });
+        if (!error) inserted++;
+      }
+    }
+
+    // Renewal timing: renewal window opening within 30 days
+    const endingAt = l.ending_at ? new Date(l.ending_at).getTime() : null;
+    if (endingAt && endingAt > now && endingAt - now <= 30 * DAY) {
+      const daysLeft = Math.max(1, Math.round((endingAt - now) / DAY));
+      const recent = await supabase.from("fix_actions").select("id")
+        .eq("user_id", userId).eq("listing_id", l.id)
+        .eq("factor_key", "renewal_timing")
+        .gte("created_at", new Date(now - 30 * DAY).toISOString())
+        .limit(1).maybeSingle();
+      if (!recent.data) {
+        const rationale = rising
+          ? `"${title}" renews in about ${daysLeft} day${daysLeft === 1 ? "" : "s"}, and its traffic is climbing (${recentViews} views vs ${priorViews} the previous two weeks). Renewing now keeps that momentum going.`
+          : declining
+          ? `"${title}" renews in about ${daysLeft} day${daysLeft === 1 ? "" : "s"}, but views have been sliding (${recentViews} vs ${priorViews}). A quick title/tag refresh before it renews gets more out of the renewal fee.`
+          : `"${title}" renews in about ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Traffic's been steady — no action needed unless you want to freshen it up first.`;
+        const { error } = await supabase.from("fix_actions").insert({
+          user_id: userId,
+          listing_id: l.id,
+          factor_key: "renewal_timing",
+          dimension: "content",
+          mode: "inform",
+          severity: declining ? "medium" : "low",
+          current_value: { days_until_renewal: daysLeft, recent_14d_views: recentViews, prior_14d_views: priorViews },
+          rationale,
+          evidence: { trend: rising ? "rising" : declining ? "declining" : "steady", data_source: "own_listing_snapshots" },
+          source,
+          status: "pending",
+        });
+        if (!error) inserted++;
+      }
+    }
+  }
+  return inserted;
 }
 
 // ── Extension C helper ────────────────────────────────────────────────────────
