@@ -4201,6 +4201,7 @@ export type Database = {
         }[]
       }
       refresh_store_velocity: { Args: { _user_id: string }; Returns: undefined }
+      refund_grade: { Args: { _user_id: string }; Returns: undefined }
       set_event_counter_max: {
         Args: { p_metric: string; p_user_id: string; p_value: number }
         Returns: undefined
