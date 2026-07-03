@@ -84,7 +84,44 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Pre-mount critical styles: guarantee readable, light content even if the
+         JS bundle never executes (screenshot tools, headless review environments,
+         blocked scripts). Etsy's API reviewer previously saw a black page here:
+         the default landing theme is dark and #root was empty, so a no-JS load
+         painted a black viewport with nothing in it. React's createRoot().render()
+         replaces this fallback on mount. -->
+    <style>
+      #root:empty ~ noscript { display: block; }
+      .preboot {
+        min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 12px; background: #faf7f2; color: #3d3229;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif; text-align: center;
+        padding: 24px;
+      }
+      .preboot h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+      .preboot p { font-size: 15px; max-width: 44rem; line-height: 1.6; margin: 0; color: #6b5d4f; }
+      .preboot .dot { width: 10px; height: 10px; border-radius: 50%; background: #e8865a; animation: preboot-pulse 1.2s ease-in-out infinite; }
+      @keyframes preboot-pulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+    </style>
+    <div id="root">
+      <div class="preboot">
+        <h1>RadarIQ</h1>
+        <p>AI-powered grading and optimization for Etsy sellers. RadarIQ connects to your
+        own Etsy shop (with your permission, via Etsy's official API) to grade your
+        listings, suggest specific improvements, and track results over time.</p>
+        <div class="dot" aria-hidden="true"></div>
+      </div>
+    </div>
+    <noscript>
+      <div class="preboot">
+        <h1>RadarIQ</h1>
+        <p>RadarIQ is an optimization assistant for Etsy sellers: it grades your listings,
+        recommends specific improvements to titles, tags, photos, and pricing, and helps
+        you apply them — using only your own shop's data, accessed through Etsy's official
+        API with your consent. This application requires JavaScript to run. Questions?
+        Contact support@radariq.app.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
