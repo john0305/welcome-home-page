@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * "Radar's read" — the intelligence layer stays the first thing a seller sees
+ * "Echo's read" — the intelligence layer stays the first thing a seller sees
  * when they land on Listings, instead of dropping them straight into filter
  * machinery. One warm synthesis line + tappable opportunity chips that ARE
  * the drill-down filters (they drive the same tab handlers as the stat tabs).

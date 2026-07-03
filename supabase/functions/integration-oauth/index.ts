@@ -55,6 +55,15 @@ Deno.serve(async (req) => {
       if (vErr || !claimsData?.claims?.sub) return json({ error: "Unauthorized" }, 401);
       const userId = claimsData.claims.sub as string;
 
+      // Tier gate mirrors the client (data_integrations = pro): server-side
+      // so the paywall can't be bypassed by calling the function directly.
+      const { data: profile } = await supabase
+        .from("user_profiles").select("tier").eq("id", userId).maybeSingle();
+      const tier = String(profile?.tier ?? "free");
+      if (!["pro", "agency", "enterprise", "admin"].includes(tier)) {
+        return json({ error: "upgrade_required", upgrade_required: true }, 403);
+      }
+
       const stateBytes = new Uint8Array(32);
       crypto.getRandomValues(stateBytes);
       const state = Array.from(stateBytes).map((b) => b.toString(16).padStart(2, "0")).join("");

@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { canUseTierOnly } from '@/lib/tier-access'
+import { useNavigate } from 'react-router-dom'
 
 // integration_connections lands in generated types when Lovable applies
 // migration 20260702000007; untyped-client pattern until then.
@@ -34,8 +36,12 @@ const PROVIDERS: { key: string; label: string; blurb: string }[] = [
 export function IntegrationsCard() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [connections, setConnections] = useState<ConnectionRow[]>([])
   const [busy, setBusy] = useState<string | null>(null)
+  // Pro feature (tier map: "more integrations" is the honest paid step-up;
+  // core Etsy insights stay free). Server enforces the same gate.
+  const tierAllows = canUseTierOnly(user?.tier, 'data_integrations')
 
   useEffect(() => {
     if (!user?.id) return
@@ -115,7 +121,7 @@ export function IntegrationsCard() {
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 shrink-0">
                   <CheckCircle2 className="h-4 w-4" /> Connected
                 </span>
-              ) : (
+              ) : tierAllows ? (
                 <Button
                   size="sm"
                   onClick={() => void connect(p.key)}
@@ -124,6 +130,15 @@ export function IntegrationsCard() {
                 >
                   {busy === p.key ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
                   Connect
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/app/settings?tab=billing')}
+                  className="shrink-0"
+                >
+                  Available on Pro
                 </Button>
               )}
             </div>

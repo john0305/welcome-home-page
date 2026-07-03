@@ -171,7 +171,7 @@ export function useMilestone(opts: {
       key: 'welcome-first-login',
       icon: 'star',
       title: 'Welcome to Radar! 🎉',
-      body: 'Your store is connected. Radar is analyzing your listings now — check back in a moment!',
+      body: 'Your store is connected. Echo is analyzing your listings now — check back in a moment!',
       color: 'violet',
     }
   }
@@ -316,7 +316,7 @@ export function useMilestone(opts: {
       key: 'optimized-10',
       icon: 'zap',
       title: 'Power optimizer!',
-      body: `${optimizedCount} listings optimized — Radar is seriously impressed.`,
+      body: `${optimizedCount} listings optimized — Echo is seriously impressed.`,
       color: 'violet',
     }
   }

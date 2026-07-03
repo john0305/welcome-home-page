@@ -30,6 +30,7 @@ export type Feature =
   | 'guided_fix_description'
   | 'guided_fix_price'
   | 'echo_memory'
+  | 'data_integrations'
 
 export const TIER_ACCESS: Record<Tier, Feature[]> = {
   free: [
@@ -68,6 +69,9 @@ export const TIER_ACCESS: Record<Tier, Feature[]> = {
     'guided_fix_title',
     'guided_fix_description',
     'echo_memory',
+    // Third-party data sources (GA4 etc.) — the "more integrations" step-up
+    // named in the tier strategy; core Etsy insights stay free.
+    'data_integrations',
   ],
 }
 

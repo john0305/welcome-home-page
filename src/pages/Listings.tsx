@@ -382,7 +382,7 @@ export default function Listings() {
       <div className="flex-1 p-6 space-y-4">
         <SampleDataBanner />
 
-        {/* Radar's read — the intelligence layer leads; filters/table are the
+        {/* Echo's read — the intelligence layer leads; filters/table are the
             drill-down, not the landing experience. */}
         <ListingsInsightHeader listings={listings} onSelectTab={handleTabSelect} />
 

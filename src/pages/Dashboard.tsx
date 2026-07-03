@@ -171,7 +171,7 @@ export default function Dashboard() {
     if (needsAttentionCount > 0) {
       return `${needsAttentionCount} listing${needsAttentionCount === 1 ? '' : 's'} need attention. Let's fix them.`
     }
-    return "Radar is scanning your shop for opportunities."
+    return "Echo is scanning your shop for opportunities."
   }, [confirmedDelta, pendingFixCount, needsAttentionCount])
 
   // This week's wins
@@ -402,14 +402,14 @@ export default function Dashboard() {
             {/* RIGHT column */}
             <div className="space-y-4">
 
-              {/* Radar's Insight */}
+              {/* Echo's Insight — the one proactive-assistant voice (naming unified: Echo) */}
               <div className="rounded-2xl border border-violet-300/50 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-950/20 overflow-hidden">
                 <div className="flex items-start gap-2.5 px-4 py-3.5 border-b border-violet-200/60 dark:border-violet-500/20">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/15 shrink-0 mt-0.5">
                     <Sparkles className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Radar's Insight</p>
+                    <p className="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Echo's Insight</p>
                   </div>
                   <Sparkles className="h-3.5 w-3.5 text-violet-300 dark:text-violet-500 shrink-0" />
                 </div>
@@ -418,7 +418,7 @@ export default function Dashboard() {
                     <p className="text-sm text-violet-900 dark:text-violet-100 leading-relaxed">{(intelligence as unknown as { niche_summary: string }).niche_summary}</p>
                   ) : (
                     <p className="text-sm text-violet-800/80 dark:text-violet-200 leading-relaxed italic">
-                      "Radar is scanning your niche for trending tags and competitor insights. Check back after your first sync."
+                      "Echo is scanning your niche for trending tags and competitor insights. Check back after your first sync."
                     </p>
                   )}
                 </div>
