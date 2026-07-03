@@ -18,6 +18,7 @@ import { loadPersonalization, savePersonalization, requestFollowups } from '@/li
 import { useApp } from '@/contexts/AppContext'
 import { detectShopCategory, CATEGORY_LABELS, type ShopCategory } from '@/lib/detectShopCategory'
 import { completeOnboardingStep } from '@/types/onboarding'
+import { ShopTypeCard } from '@/components/personal/ShopTypeCard'
 
 const DEFAULT_PROFILE: Partial<StorePersonality> = {
   tone: 'casual',
@@ -175,6 +176,9 @@ export default function StoreProfile() {
       <Header title="Personalize Your AI" description="Help Radar IQ write listings that sound exactly like your brand" />
 
       <div className="flex-1 p-6 max-w-5xl mx-auto w-full space-y-4">
+        {/* Detected shop type — confirm/correct (Section 9 self-learning loop) */}
+        <ShopTypeCard />
+
         {/* Top bar: store info + save */}
         <Card>
           <CardContent className="p-3 flex flex-wrap items-center gap-2 text-xs">

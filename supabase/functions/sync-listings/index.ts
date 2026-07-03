@@ -2,6 +2,7 @@
 // Uses RadarIQ's own Etsy app credentials from server secrets. Auto-refreshes access token if needed.
 // Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { persistShopTypeProfile } from "../_shared/shop-type.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -387,6 +388,19 @@ Deno.serve(async (req) => {
         favorites,
         quantity,
         ending_at: newEndingAt,
+        // Etsy's own classification fields — drive deterministic shop/listing
+        // type detection (digital, made-to-order, vintage, supplies) and
+        // production-pattern signals for type-branched recommendations.
+        listing_type: (e as { listing_type?: string }).listing_type ?? null,
+        who_made: (e as { who_made?: string }).who_made ?? null,
+        when_made: (e as { when_made?: string }).when_made ?? null,
+        is_supply: (e as { is_supply?: boolean }).is_supply ?? null,
+        taxonomy_id: (e as { taxonomy_id?: number }).taxonomy_id ?? null,
+        shop_section_id: (e as { shop_section_id?: number }).shop_section_id ?? null,
+        processing_min: (e as { processing_min?: number }).processing_min ?? null,
+        processing_max: (e as { processing_max?: number }).processing_max ?? null,
+        has_variations: (e as { has_variations?: boolean }).has_variations ?? null,
+        is_personalizable: (e as { is_personalizable?: boolean }).is_personalizable ?? null,
       };
 
       const { data: upRow, error: upErr } = await supabase
@@ -555,6 +569,15 @@ Deno.serve(async (req) => {
           etsy_updated_max: etsyUpdatedMaxIso,
         })
         .eq("id", limitRowId);
+    }
+
+    // Recompute the shop-type profile from freshly synced classification
+    // fields (listing_type / when_made / is_supply / who_made). Deterministic
+    // and cheap; never overwrites a seller's manual override.
+    try {
+      await persistShopTypeProfile(supabase, userId);
+    } catch (e) {
+      console.error("shop-type profile persist failed", e);
     }
 
     // Chain shop snapshot (orders_30d, revenue_30d, shop totals) so users never
