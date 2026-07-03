@@ -339,7 +339,11 @@ Also produce suggested_actions: 0-4 concrete, physical next-steps the seller can
     });
     // AI fallback (Section 12a): when a fresh grade can't be computed, return
     // the last successfully computed one clearly marked stale ("as of <date>")
-    // instead of an error or blank state. Refund the grade credit either way.
+    // instead of an error or blank state.
+    // NOTE: consume_grade charges grades_used upfront, so a failed grade still
+    // costs one of the monthly allowance. There is no refund_grade RPC yet —
+    // tracked as a backend follow-up (mirror refund_optimization) so failed
+    // refreshes don't count against quota, per Section 12a fairness.
     if (!aiRes.ok) {
       const status = aiRes.status;
       const detail = (await aiRes.text().catch(() => "")).slice(0, 200);
