@@ -1,7 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TrendingUp, X } from 'lucide-react'
 
 const STORAGE_KEY = 'radariq_last_seen_blended'
+// A "visit" only counts if the last stored value is at least this old.
+// The blended score recomputes several times during a single page load as
+// data trickles in — without this gap, the banner fired on plain refreshes
+// claiming the score rose "since your last visit" when nothing had changed.
+const MIN_VISIT_GAP_MS = 30 * 60 * 1000
+const FADE_MS = 400
+
+interface Stored { v: number; ts: number }
+
+function readStored(): Stored | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Legacy format was a bare number with no timestamp — treat it as an
+    // old visit so the comparison still works once, then upgrade the format.
+    if (typeof parsed === 'number') return { v: parsed, ts: 0 }
+    if (parsed && typeof parsed.v === 'number' && typeof parsed.ts === 'number') return parsed as Stored
+    return null
+  } catch { return null }
+}
 
 interface Props {
   blended: number | null
@@ -9,35 +30,46 @@ interface Props {
 }
 
 /**
- * Compares the current blended score to the last value the user saw (stored
- * in localStorage). If it climbed, shows a dismissible banner at the top of
- * the dashboard. Auto-hides after 8s.
+ * Compares the current blended score to the value from the user's LAST REAL
+ * VISIT (stored with a timestamp; intra-pageload recomputes don't count).
+ * If it climbed ≥0.5 since a visit 30+ minutes ago, shows a dismissible
+ * banner that fades out gently. Auto-hides after 8s.
  */
 export function ScoreClimbBanner({ blended, pendingFixCount }: Props) {
   const [delta, setDelta] = useState<number | null>(null)
-  const [dismissed, setDismissed] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [gone, setGone] = useState(false)
+  // Snapshot of what was in storage when this page load began — compared
+  // against once, so later writes during the same load can't fake a "visit".
+  const initialRef = useRef<Stored | null | undefined>(undefined)
 
   useEffect(() => {
     if (blended == null) return
-    let prev: number | null = null
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) prev = Number(raw)
-    } catch { /* ignore */ }
-    if (prev != null && Number.isFinite(prev)) {
-      const d = blended - prev
+    if (initialRef.current === undefined) initialRef.current = readStored()
+    const prev = initialRef.current
+    if (prev && Number.isFinite(prev.v) && Date.now() - prev.ts >= MIN_VISIT_GAP_MS) {
+      const d = blended - prev.v
       if (d >= 0.5) setDelta(Number(d.toFixed(1)))
     }
-    try { localStorage.setItem(STORAGE_KEY, String(blended)) } catch { /* ignore */ }
+    // Always persist the latest settled value + time so the NEXT visit
+    // compares against what the user is seeing right now.
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: blended, ts: Date.now() } satisfies Stored)) } catch { /* ignore */ }
   }, [blended])
 
   useEffect(() => {
     if (delta == null) return
-    const t = window.setTimeout(() => setDismissed(true), 8000)
+    const t = window.setTimeout(() => setClosing(true), 8000)
     return () => window.clearTimeout(t)
   }, [delta])
 
-  if (delta == null || dismissed || blended == null) return null
+  // Gentle fade-out instead of vanishing instantly.
+  useEffect(() => {
+    if (!closing) return
+    const t = window.setTimeout(() => setGone(true), FADE_MS)
+    return () => window.clearTimeout(t)
+  }, [closing])
+
+  if (delta == null || gone || blended == null) return null
 
   return (
     <div
@@ -46,6 +78,8 @@ export function ScoreClimbBanner({ blended, pendingFixCount }: Props) {
       style={{
         background: 'linear-gradient(90deg, rgba(16,185,129,0.10) 0%, hsl(var(--primary) / 0.06) 100%)',
         borderColor: 'rgba(16,185,129,0.35)',
+        opacity: closing ? 0 : 1,
+        transition: `opacity ${FADE_MS}ms ease`,
       }}
     >
       <div
@@ -55,22 +89,22 @@ export function ScoreClimbBanner({ blended, pendingFixCount }: Props) {
         <TrendingUp className="h-4 w-4" style={{ color: '#10b981' }} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-white" style={{ fontFamily: 'Bricolage Grotesque, system-ui, sans-serif' }}>
-          Optimization score climbed to {blended.toFixed(1)} — up +{delta.toFixed(1)} since your last visit
+        <p className="text-sm font-semibold text-foreground" style={{ fontFamily: 'Bricolage Grotesque, system-ui, sans-serif' }}>
+          Your shop score climbed to {blended.toFixed(1)} — up +{delta.toFixed(1)} since your last visit
         </p>
         {pendingFixCount > 0 && (
-          <p className="text-[11px] mt-0.5" style={{ color: 'rgba(16,185,129,0.85)' }}>
+          <p className="text-[11px] mt-0.5 text-emerald-700 dark:text-emerald-400">
             +{pendingFixCount} more fix{pendingFixCount === 1 ? '' : 'es'} pending next sync
           </p>
         )}
       </div>
       <button
         type="button"
-        onClick={() => setDismissed(true)}
-        className="rounded-md p-1 hover:bg-white/10 transition-colors"
+        onClick={() => setClosing(true)}
+        className="rounded-md p-1 hover:bg-foreground/10 transition-colors"
         aria-label="Dismiss"
       >
-        <X className="h-4 w-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
+        <X className="h-4 w-4 text-muted-foreground" />
       </button>
     </div>
   )

@@ -14,9 +14,11 @@ import { supabase } from '@/integrations/supabase/client'
 import { ThemeSelector } from '@/components/landing/ThemeSelector'
 
 // ─── A/B-ready headline — swap this object without restructuring the page ────
+// Reframed (UX pass 2026-07-04): assistant-not-dashboard positioning — warm
+// and capability-led instead of fear-led, matching the in-app tone.
 const HERO_HEADLINE = {
-  line1: "Your Etsy listings are invisible.",
-  line2: "You don't know why. RadarIQ does.",
+  line1: "Your Etsy shop just hired",
+  line2: "its first assistant.",
 }
 
 // ─── Color tokens ────────────────────────────────────────────────────────────
@@ -336,7 +338,7 @@ function Hero() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: TEAL }} />
               <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: TEAL }} />
             </span>
-            Market Intelligence for Etsy Sellers
+            The AI Assistant for Etsy Sellers
           </SectionEyebrow>
         </div>
 
@@ -359,12 +361,12 @@ function Hero() {
         {/* Subheadline */}
         <div className="space-y-3 max-w-2xl mx-auto">
           <p style={{ fontSize: '1.1rem', color: MUTED, lineHeight: 1.65 }}>
-            Your competitors know exactly why their listings rank.
-            You're guessing. RadarIQ closes that gap.
+            RadarIQ watches your listings while you're away, spots what's
+            holding them back, and lines up fixes ready for your approval.
           </p>
           <p style={{ fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.6 }}>
-            See your market score, find the gaps, fix them in one click,
-            and track whether it worked, all in one place.
+            It grades every listing, writes the improvement, waits for your OK,
+            then tracks whether it actually worked — all in one place.
           </p>
         </div>
 
@@ -413,21 +415,25 @@ function Hero() {
 }
 
 // ─── The Contrast ─────────────────────────────────────────────────────────────
+// Copy audit (UX pass 2026-07-04): every "good" example below must be a claim
+// the live pipeline can actually deliver today — no competitor-specific
+// callouts (compliance decision pending) and no auto-apply language (every
+// change requires seller approval).
 const CONTRAST_PAIRS = [
   {
     label: 'Tag advice',
     bad:  'Your tags could be better.',
-    good: "Add these 3 tags. Your top competitors all use them. Add them to your listing right now. We'll do it for you.",
+    good: "3 of your listings have empty tag slots — each one is a search you can't appear in. The fills are written and waiting for your approval.",
   },
   {
     label: 'Score without meaning',
     bad:  'Your title score is 6.2.',
-    good: 'Your title is 27 characters shorter than listings ranking above you. Here\'s a market-informed rewrite. Ready to apply.',
+    good: "This title leaves keyword room on the table — shoppers search long phrases it never mentions. Here's a rewrite, ready for your OK.",
   },
   {
-    label: 'Pricing advice',
-    bad:  'Consider your pricing strategy.',
-    good: "You're priced 34% above your niche. Here's exactly where top sellers cluster, and what they're doing differently.",
+    label: 'Photo advice',
+    bad:  'Add more photos.',
+    good: "8 listings use fewer than 5 of Etsy's 10 photo slots — filling them typically lifts product exploration by ~30%. Here's exactly which ones.",
   },
   {
     label: 'The follow-through',

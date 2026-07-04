@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { useNavigate } from 'react-router-dom'
 import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { EchoFixEmbed } from './EchoFixEmbed'
 
@@ -22,6 +23,7 @@ const REASONS: { value: FeedbackReason; label: string }[] = [
 export function EchoMessage({ id, role, content, onFeedback, hideFeedback }: Props) {
   const [rated, setRated] = useState<'up' | 'down' | null>(null)
   const [pickingReason, setPickingReason] = useState(false)
+  const navigate = useNavigate()
 
   const isUser = role === 'user'
 
@@ -62,7 +64,27 @@ export function EchoMessage({ id, role, content, onFeedback, hideFeedback }: Pro
                             prose-headings:text-foreground prose-headings:text-sm
                             prose-code:text-[11px] prose-code:bg-black/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
                             prose-a:text-primary">
-              <ReactMarkdown>{cleanContent}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  // In-app links navigate client-side (Section 9a: responses
+                  // link straight to the page/listing being discussed);
+                  // everything else opens in a new tab.
+                  a: ({ href, children }) =>
+                    href?.startsWith('/app/') ? (
+                      <a
+                        href={href}
+                        onClick={(e) => { e.preventDefault(); navigate(href) }}
+                        className="text-primary underline underline-offset-2 font-semibold"
+                      >
+                        {children}
+                      </a>
+                    ) : (
+                      <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+                    ),
+                }}
+              >
+                {cleanContent}
+              </ReactMarkdown>
             </div>
           )}
           {!isUser && embeds.length > 0 && (

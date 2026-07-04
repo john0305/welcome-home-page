@@ -64,7 +64,7 @@ function FactorRow({ icon: Icon, label, score, weight, explanation, dim, disable
     <button
       type="button"
       disabled={disabled}
-      onClick={() => !disabled && navigate(`/app/score-roadmap?dimension=${dim}`)}
+      onClick={() => !disabled && navigate(`/app/actions?dimension=${dim}`)}
       className="w-full flex items-center gap-4 rounded-xl border border-border bg-surface-1 px-4 py-3.5 text-left transition-all hover:border-primary/30 hover:bg-surface-2 disabled:opacity-45 disabled:cursor-default"
     >
       <div

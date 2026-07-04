@@ -96,6 +96,7 @@ export function MobileBottomNav() {
             style={{ width: 62, height: 62, bottom: 4, left: '50%', transform: 'translateX(-50%)' }}
           />
           <button
+            data-echo-toggle
             onClick={toggleEcho}
             aria-label={echoOpen ? 'Close Echo' : 'Ask Echo'}
             className="absolute transition-transform active:scale-95"
@@ -133,8 +134,9 @@ export function MobileBottomNav() {
           </button>
         </li>
 
-        {/* Score Roadmap — always right of the radar, core action page */}
-        <NavItem to="/app/score-roadmap" icon={Target} label="Roadmap" />
+        {/* Fix Actions — always right of the radar, core action page.
+            Same page/label family as the desktop nav's "Fix Actions". */}
+        <NavItem to="/app/actions" icon={Target} label="Fixes" />
 
         {/* Intelligence */}
         <NavItem to="/app/intelligence" icon={Brain} label="Intelligence" />

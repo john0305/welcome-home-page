@@ -144,6 +144,23 @@ export default function Dashboard() {
   }, [liveAvgGrade])
 
   const latestSnapshot = shopSnapshotHistory.length > 0 ? shopSnapshotHistory[shopSnapshotHistory.length - 1] : null
+
+  // "Views This Week" — snapshots store total_views as a running (lifetime)
+  // total, so the weekly figure is the delta between the newest snapshot and
+  // the snapshot closest to 7 days ago. Null until two snapshots exist.
+  const viewsThisWeek = useMemo(() => {
+    if (shopSnapshotHistory.length < 2) return null
+    const latest = shopSnapshotHistory[shopSnapshotHistory.length - 1]
+    const cutoff = Date.now() - 7 * 86_400_000
+    let baseline = shopSnapshotHistory[0]
+    for (const s of shopSnapshotHistory) {
+      if (new Date(s.recorded_on).getTime() <= cutoff) baseline = s
+      else break
+    }
+    if (baseline === latest) baseline = shopSnapshotHistory[0]
+    if (baseline === latest) return null
+    return Math.max(0, (latest.total_views ?? 0) - (baseline.total_views ?? 0))
+  }, [shopSnapshotHistory])
   const milestone = useMilestone({
     storeHealthScore: dashboardRows.length > 0 ? storeHealth.overall : null,
     views30d: latestSnapshot?.total_views ?? null,
@@ -173,6 +190,32 @@ export default function Dashboard() {
     }
     return "Echo is scanning your shop for opportunities."
   }, [confirmedDelta, pendingFixCount, needsAttentionCount])
+
+  // Echo's Insight — always shows something real (Section 6: "check back
+  // later" is a failure state). Previous code waited on shop_intelligence.
+  // niche_summary, a field NOTHING in the pipeline ever writes, so the
+  // placeholder was permanent. Derive the insight from data that exists,
+  // in order of depth: market opportunity → score trend → local grades →
+  // sync status.
+  const echoInsight = useMemo(() => {
+    const topOpp = intelligence?.top_opportunities?.[0]
+    if (topOpp) {
+      return `Biggest opening right now: ${topOpp.issue} on "${(topOpp.listing_title ?? 'a listing').slice(0, 48)}" — worth about +${topOpp.impact_points} points. It's waiting for you in Fix Actions.`
+    }
+    const delta7 = intelligence?.score_delta_7d ?? 0
+    if (intelligence && delta7 !== 0) {
+      return delta7 > 0
+        ? `Your market score is up ${delta7} point${Math.abs(delta7) === 1 ? '' : 's'} this week — the recent changes are landing. I'm watching for the next opening.`
+        : `Your market score slipped ${Math.abs(delta7)} point${Math.abs(delta7) === 1 ? '' : 's'} this week. The queue in Fix Actions has the fastest ways to win it back.`
+    }
+    if (needsAttentionCount > 0) {
+      return `${needsAttentionCount} of your listings are grading below C — they're what's holding the average down. Starting with the lowest grade gives the biggest single lift.`
+    }
+    if (activeListings.length > 0) {
+      return `Your ${activeListings.length} active listing${activeListings.length === 1 ? '' : 's'} are synced and graded. I run a deeper market pass overnight — anything new lands in Fix Actions by morning.`
+    }
+    return 'As soon as your listings arrive, I start grading them and lining up your first fixes — usually within a couple of minutes of connecting.'
+  }, [intelligence, needsAttentionCount, activeListings.length])
 
   // This week's wins
   const recentWins = useMemo(() => {
@@ -237,11 +280,12 @@ export default function Dashboard() {
                   )}
                 </p>
 
-                {/* Score delta badge */}
+                {/* Score delta badge. "See what changed" answers with trend/score
+                    movement over time — that lives on Performance, not Fix Actions. */}
                 {confirmedDelta !== null && (
                   <div className="flex items-center gap-3 flex-wrap">
                     <button
-                      onClick={() => navigate('/app/actions')}
+                      onClick={() => navigate('/app/performance')}
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-95 shadow-md"
                       style={{ background: 'hsl(22 65% 50%)' }}
                     >
@@ -297,10 +341,10 @@ export default function Dashboard() {
                 </div>
               )}
               <button
-                onClick={() => navigate('/app/score-roadmap')}
+                onClick={() => navigate('/app/actions')}
                 className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
               >
-                View score roadmap <ArrowRight className="h-3 w-3" />
+                See how to raise this score <ArrowRight className="h-3 w-3" />
               </button>
             </div>
           </div>
@@ -319,19 +363,11 @@ export default function Dashboard() {
               onClick={() => navigate('/app/listings')}
             />
             <StitchKPI
-              label="Avg. Listing Grade"
-              value={numToGrade(liveAvgGrade)}
-              icon={<Award className="h-4 w-4" />}
-              iconColor="bg-violet-100 text-violet-600"
-              trend={liveAvgGrade != null ? `${liveAvgGrade} / 100` : undefined}
-            />
-            <StitchKPI
               label="Views This Week"
-              value={latestSnapshot?.total_views != null ? latestSnapshot.total_views.toLocaleString() : '—'}
+              value={viewsThisWeek != null ? viewsThisWeek.toLocaleString() : '—'}
               icon={<Eye className="h-4 w-4" />}
               iconColor="bg-violet-100 text-violet-600"
-              trendUp={typeof confirmedDelta === 'number' && confirmedDelta > 0}
-              trend={confirmedDelta != null ? `${confirmedDelta > 0 ? '+' : ''}${confirmedDelta.toFixed(1)}%` : undefined}
+              trend={latestSnapshot?.total_views != null ? `${latestSnapshot.total_views.toLocaleString()} all-time` : undefined}
               onClick={() => navigate('/app/performance')}
             />
             <StitchKPI
@@ -341,6 +377,13 @@ export default function Dashboard() {
               iconColor={needsAttentionCount === 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}
               trend={needsAttentionCount === 0 ? 'All healthy' : 'below grade C'}
               onClick={needsAttentionCount > 0 ? () => navigate('/app/listings', { state: { preset: 'lowest_grade' } }) : undefined}
+            />
+            <StitchKPI
+              label="Avg. Listing Grade"
+              value={numToGrade(liveAvgGrade)}
+              icon={<Award className="h-4 w-4" />}
+              iconColor="bg-violet-100 text-violet-600"
+              trend={liveAvgGrade != null ? `${liveAvgGrade} / 100` : undefined}
             />
           </div>
         )}
@@ -420,13 +463,7 @@ export default function Dashboard() {
                   <Sparkles className="h-3.5 w-3.5 text-violet-300 dark:text-violet-500 shrink-0" />
                 </div>
                 <div className="px-4 py-3">
-                  {(intelligence as unknown as { niche_summary?: string | null } | null)?.niche_summary ? (
-                    <p className="text-sm text-violet-900 dark:text-violet-100 leading-relaxed">{(intelligence as unknown as { niche_summary: string }).niche_summary}</p>
-                  ) : (
-                    <p className="text-sm text-violet-800/80 dark:text-violet-200 leading-relaxed italic">
-                      "Echo is scanning your niche for trending tags and competitor insights. Check back after your first sync."
-                    </p>
-                  )}
+                  <p className="text-sm text-violet-900 dark:text-violet-100 leading-relaxed">{echoInsight}</p>
                 </div>
               </div>
 

@@ -34,8 +34,11 @@ export function OnboardingRedirects() {
   }, [storeStatus, isStoreConnected])
 
   // Step 1 — push unconnected users to the Etsy connect screen.
+  // Honors "Skip for now" on ConnectEtsy (session-scoped): without the flag,
+  // skipping just bounced the user straight back, which read as a broken page.
   useEffect(() => {
     if (storeStatus !== 'not_connected') return
+    try { if (sessionStorage.getItem('radariq_connect_skipped') === '1') return } catch { /* ignore */ }
     const allow = ['/app/connect-etsy', '/app/settings', '/app/choose-plan', '/app/affiliate']
     if (allow.some(p => location.pathname.startsWith(p))) return
     navigate('/app/connect-etsy', { replace: true })

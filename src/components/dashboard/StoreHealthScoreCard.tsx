@@ -330,7 +330,7 @@ export function StoreHealthScoreCard({ score, scoreTrend, marketScore, momentumT
                 </button>
               )}
               <button
-                onClick={() => navigate('/app/score-roadmap')}
+                onClick={() => navigate('/app/actions')}
                 className="w-full text-xs font-semibold px-3 py-2 rounded-md transition-all active:scale-95 shadow-sm text-primary-foreground"
                 style={{
                   background: 'hsl(var(--primary))',

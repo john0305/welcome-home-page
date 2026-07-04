@@ -25,7 +25,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/intelligence': 'Intelligence',
   '/app/performance': 'Performance',
   '/app/actions': 'Fix Actions',
-  '/app/score-roadmap': 'Score Roadmap',
   '/app/store-profile': 'Personalize AI',
   '/app/settings': 'Settings',
   '/app/affiliate': 'Affiliate',

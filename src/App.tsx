@@ -154,8 +154,9 @@ export default function App() {
                   <Route path="performance" element={<Performance />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="store-profile" element={<StoreProfile />} />
-                  <Route path="insights" element={<Navigate to="/app/score-roadmap" replace />} />
-                  <Route path="score-roadmap" element={<ScoreRoadmap />} />
+                  <Route path="insights" element={<Navigate to="/app/actions" replace />} />
+                  {/* Score Roadmap merged into Fix Actions — redirect stale links */}
+                  <Route path="score-roadmap" element={<Navigate to="/app/actions" replace />} />
                   <Route path="intelligence" element={<Intelligence />} />
                   <Route path="ab-testing" element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="affiliate" element={<Affiliate />} />

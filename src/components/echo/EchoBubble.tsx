@@ -40,6 +40,7 @@ export function EchoBubble({ open, hasUnread, onToggle }: Props) {
       </div>
 
       <button
+        data-echo-toggle
         onClick={onToggle}
         aria-label={open ? 'Close Echo' : 'Ask Echo'}
         className={cn(

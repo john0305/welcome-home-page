@@ -55,11 +55,11 @@ export function RoadmapContextBanner({ filter, filteredCount, onDismiss }: Props
           </div>
           <button
             type="button"
-            onClick={() => navigate('/app/score-roadmap')}
+            onClick={() => navigate('/app/actions')}
             className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
-            Back to Score Roadmap
+            Back to Fix Actions
           </button>
         </>
       ) : (
@@ -76,11 +76,11 @@ export function RoadmapContextBanner({ filter, filteredCount, onDismiss }: Props
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate('/app/score-roadmap')}
+              onClick={() => navigate('/app/actions')}
               className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-3 w-3" />
-              Back to Score Roadmap
+              Back to Fix Actions
             </button>
             <button
               type="button"

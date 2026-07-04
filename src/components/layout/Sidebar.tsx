@@ -26,12 +26,15 @@ const LOCK_META: Record<string, LockMeta> = {
   },
 }
 
+// Ordered by the daily-use loop, not alphabetically: land on Dashboard →
+// approve what's queued (Fix Actions) → manage inventory (Listings) →
+// check what changed (Performance) → go deep occasionally (Intelligence).
 const NAV_ITEMS = [
   { to: '/app/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/app/listings',     icon: List,            label: 'Listings',     badge: 'listings' as const },
-  { to: '/app/intelligence', icon: BarChart2,       label: 'Intelligence' },
-  { to: '/app/performance',  icon: TrendingUp,      label: 'Performance' },
   { to: '/app/actions',      icon: ShieldCheck,     label: 'Fix Actions',  badge: 'actions' as const },
+  { to: '/app/listings',     icon: List,            label: 'Listings',     badge: 'listings' as const },
+  { to: '/app/performance',  icon: TrendingUp,      label: 'Performance' },
+  { to: '/app/intelligence', icon: BarChart2,       label: 'Intelligence' },
 ]
 
 const BOTTOM_ITEMS = [
@@ -278,6 +281,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps = {}
         <div className="px-4 pb-3">
           <button
             type="button"
+            data-echo-toggle
             onClick={toggleEcho}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-warm-sm"
           >

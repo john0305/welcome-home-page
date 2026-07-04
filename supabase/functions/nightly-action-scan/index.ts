@@ -24,7 +24,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   aiGateway,
   corsHeaders,
-  etsyApiFor,
   json,
   loadListingCtx,
   loadShopCtx,
@@ -243,54 +242,20 @@ async function scanUser(
     console.error("own-data trend scan failed", userId, e);
   }
 
-  // ── Step 4: auto-apply opted-in safe fixes ───────────────────────────────
-  const { data: prefs } = await supabase
-    .from("auto_apply_preferences")
-    .select("enabled, allowed_factors")
-    .eq("user_id", userId)
-    .maybeSingle();
+  // ── Step 4: auto-apply — REMOVED (UX pass 2026-07-04, Section 4) ─────────
+  // The bulk-review brief mandates that every change requires explicit
+  // seller approval before anything is pushed to Etsy — no auto-apply, ever,
+  // regardless of confidence or opt-in. The old auto_apply_preferences path
+  // was deliberately removed here; everything the scan generates stays
+  // 'pending' until the seller approves it (individually or via the
+  // category-level bulk review on the Fix Actions page).
 
-  if (prefs?.enabled && Array.isArray(prefs.allowed_factors) && prefs.allowed_factors.length > 0) {
-    const { data: autoCandidates } = await supabase
-      .from("fix_actions")
-      .select("id, factor_key, listing_id, etsy_shop_id, proposed_value")
-      .eq("user_id", userId)
-      .eq("status", "pending")
-      .eq("mode", "auto")
-      .in("factor_key", prefs.allowed_factors);
-
-    for (const c of autoCandidates || []) {
-      const factor = getFactor(c.factor_key);
-      if (!factor || !factor.applyFix || !factor.safe_auto_apply) continue;
-      try {
-        const ctx = factor.scope === "listing"
-          ? (c.listing_id ? await loadListingCtx(supabase, userId, c.listing_id) : null)
-          : await loadShopCtx(supabase, userId, c.etsy_shop_id ?? undefined);
-        if (!ctx) continue;
-        const api = await etsyApiFor(supabase, userId);
-        const r = await factor.applyFix(ctx, c.proposed_value, api);
-        if (r.ok) {
-          await supabase.from("fix_actions").update({
-            status: "applied",
-            applied_at: new Date().toISOString(),
-            applied_value: r.applied_value as object | null,
-            etsy_response: r.etsy_response as object | null,
-          }).eq("id", c.id);
-          summary.auto_applied += 1;
-        } else {
-          summary.failures += 1;
-          if (r.demote_to_guided) {
-            await supabase.from("fix_actions").update({
-              mode: "guided",
-              failure_reason: r.failure_reason ?? null,
-            }).eq("id", c.id);
-          }
-        }
-      } catch (e) {
-        console.error("auto-apply failed", c.id, e);
-        summary.failures += 1;
-      }
-    }
+  // ── Step 4.5: resurface trend/seasonal fixes whose window has closed ─────
+  try {
+    const resurfaced = await resurfaceEndedTrends(supabase, userId, source);
+    summary.actions_generated += resurfaced;
+  } catch (e) {
+    console.error("trend resurface failed", userId, e);
   }
 
   // ── Step 5: count what's left awaiting attention ─────────────────────────
@@ -606,6 +571,73 @@ async function scanOwnDataTrends(
     }
   }
   return inserted;
+}
+
+// ── Trend/seasonal lifecycle resurfacing (Section 5) ─────────────────────────
+// Trend fixes recorded in trend_lifecycles carry an expected relevance window.
+// Once it closes, ask the seller — via a normal pending fix_action that groups
+// under "Seasonal & trend check-ins" in the bulk review — whether to revert to
+// the pre-trend snapshot, refresh for what's next, or keep the change.
+async function resurfaceEndedTrends(
+  supabase: ReturnType<typeof makeServiceClient>,
+  userId: string,
+  source: string,
+): Promise<number> {
+  const nowIso = new Date().toISOString();
+  const { data: ended } = await supabase
+    .from("trend_lifecycles")
+    .select("id, listing_id, version_id, trend_key, label, applied_at")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .lte("expected_end_at", nowIso);
+  if (!ended?.length) return 0;
+
+  let created = 0;
+  for (const t of ended) {
+    let title = "this listing";
+    if (t.listing_id) {
+      const { data: l } = await supabase
+        .from("listings").select("title, state").eq("id", t.listing_id).maybeSingle();
+      if (!l || l.state !== "active") {
+        // Listing gone/inactive — close the lifecycle quietly.
+        await supabase.from("trend_lifecycles")
+          .update({ status: "kept", resolved_at: nowIso, updated_at: nowIso })
+          .eq("id", t.id);
+        continue;
+      }
+      title = (l.title ?? title).slice(0, 60);
+    }
+    const appliedDaysAgo = Math.max(1, Math.round((Date.now() - new Date(t.applied_at).getTime()) / 86_400_000));
+    const { data: inserted, error } = await supabase.from("fix_actions").insert({
+      user_id: userId,
+      listing_id: t.listing_id,
+      factor_key: "trend_expiry_review",
+      dimension: "freshness",
+      mode: "inform",
+      severity: "medium",
+      current_value: { trend_key: t.trend_key, applied_at: t.applied_at },
+      rationale: `The ${String(t.label ?? "trend").toLowerCase()} update on "${title}" has run its course — it went live ${appliedDaysAgo} days ago for a window that's now closed. Revert to the original, refresh it for what's next, or leave it as-is?`,
+      evidence: {
+        lifecycle_id: t.id,
+        version_id: t.version_id,
+        trend_key: t.trend_key,
+        label: t.label,
+        applied_at: t.applied_at,
+      },
+      source,
+      status: "pending",
+    }).select("id").single();
+    if (!error && inserted) {
+      await supabase.from("trend_lifecycles").update({
+        status: "awaiting_review",
+        resurfaced_at: nowIso,
+        review_action_id: inserted.id,
+        updated_at: nowIso,
+      }).eq("id", t.id);
+      created++;
+    }
+  }
+  return created;
 }
 
 // ── Extension C helper ────────────────────────────────────────────────────────

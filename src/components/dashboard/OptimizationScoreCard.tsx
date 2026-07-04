@@ -182,7 +182,7 @@ export function OptimizationScoreCard({ rows, health, confirmedDelta, pendingFix
           )}
           <button
             type="button"
-            onClick={() => navigate('/app/score-roadmap')}
+            onClick={() => navigate('/app/actions')}
             className="col-span-2 mt-1 text-[11px] font-semibold py-2 rounded-md border transition-colors hover:bg-primary/10"
             style={{ borderColor: 'hsl(var(--primary) / 0.4)', color: TEAL }}
           >

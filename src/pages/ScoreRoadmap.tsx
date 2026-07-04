@@ -9,6 +9,7 @@ import { computeStoreHealthScore, healthGradeColor, subScoreColor } from '@/lib/
 import { detectShopType } from '@/lib/shopType'
 import { usePendingFixActions, groupActionsByListing } from '@/hooks/useFixActions'
 import { FixActionCard } from '@/components/actions/FixActionCard'
+import { BulkReviewPanel } from '@/components/actions/BulkReviewPanel'
 import { Badge } from '@/components/ui/badge'
 import type { DashboardListingRow } from '@/types'
 
@@ -270,7 +271,7 @@ function LeanListingCard({
     window.setTimeout(() => el.classList.remove('riq-pulse'), 380)
   }
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] hover:border-white/15 transition-all overflow-hidden flex items-center gap-3 p-4">
+    <div className="w-full rounded-xl border border-border bg-surface-1 hover:bg-surface-2 transition-all overflow-hidden flex items-center gap-3 p-4">
       <button
         type="button"
         onClick={(e) => { triggerPulse(e); onOpen() }}
@@ -368,7 +369,7 @@ function GroupedListingCard({
 
       {/* Expanded Actions List */}
       {expanded && (
-        <div className="border-t border-border/20 bg-black/15 p-4 space-y-3">
+        <div className="border-t border-border bg-surface-2/60 p-4 space-y-3">
           {listing.actions.map(action => (
             <FixActionCard 
               key={action.id} 
@@ -597,8 +598,8 @@ export default function ScoreRoadmap() {
   return (
     <div className="flex flex-col min-h-full">
       <Header
-        title="Score Roadmap"
-        description="Plan and review improvements that lift your Store Health Score."
+        title="Fix Actions"
+        description="Review and approve the improvements Echo has lined up for your shop."
       />
 
       <div className="flex-1 p-3 sm:p-4 md:p-6 space-y-6 w-full pb-16 overflow-x-hidden">
@@ -611,9 +612,12 @@ export default function ScoreRoadmap() {
               <span className="tabular-nums text-foreground/80">{pointsToNext}</span> pt{pointsToNext === 1 ? '' : 's'} to next milestone
             </>
           ) : (
-            <span className="text-emerald-400">Top milestone reached</span>
+            <span className="text-emerald-600 dark:text-emerald-400">Top milestone reached</span>
           )}
         </p>
+
+        {/* ─── Bulk review by category (Section 4) ─── */}
+        <BulkReviewPanel rows={dbRows} loading={dbLoading} onChange={dbRefresh} />
 
         {/* ─── Dimension Tabs ─── */}
         <div className="space-y-4">
@@ -765,7 +769,7 @@ function ActiveTabQueue({
               <button
                 type="button"
                 onClick={() => setBucketId(null)}
-                className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] text-slate-200 transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] text-foreground/80 transition-all active:scale-95"
                 style={{ borderColor: `${activeTabColor}55`, background: `${activeTabColor}14` }}
               >
                 <span className="capitalize text-muted-foreground">{activeTab}</span>
@@ -804,7 +808,7 @@ function ActiveTabQueue({
         )}
 
         {displayed.length > 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 space-y-3">
+          <div className="rounded-2xl border border-border bg-surface-1 p-3 space-y-3">
             {displayed.map(row => {
               const group = actionByListingId.get(row.id)
               if (group) {

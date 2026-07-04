@@ -4,16 +4,16 @@
  * Each card shows listing + dimension + score delta + Apply/Review CTA.
  * Mirrors the ActionQueue tab logic but is compact and dashboard-native.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShoppingBag, Sparkles, Zap, TrendingUp, ArrowRight, Loader2 } from 'lucide-react'
 import { usePendingFixActions, applyFixAction, type FixActionRow } from '@/hooks/useFixActions'
+import { splitTabs, TAB_MEANINGS, type ActionTab } from '@/lib/actionCategories'
 import { useToast } from '@/hooks/use-toast'
 
 const TEAL = 'hsl(var(--primary))'
-const SEVERITY_RANK: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
 
-type Tab = 'echo' | 'quick' | 'impact'
+type Tab = ActionTab
 const TABS: { key: Tab; label: string; icon: typeof Sparkles }[] = [
   { key: 'echo',   label: 'Echo Picks', icon: Sparkles   },
   { key: 'quick',  label: 'Quick Wins', icon: Zap        },
@@ -34,24 +34,6 @@ const DIMENSION_COLORS: Record<string, string> = {
   review_health: '#f59e0b',
 }
 
-function tabRows(rows: FixActionRow[], tab: Tab): FixActionRow[] {
-  if (tab === 'echo') {
-    const tagged = rows.filter(r => (r.source ?? '').toLowerCase().includes('echo'))
-    const pool = tagged.length > 0
-      ? tagged
-      : [...rows].sort((a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0))
-    return pool.slice(0, 8)
-  }
-  if (tab === 'quick') {
-    return rows.filter(r => r.mode === 'auto').slice(0, 8)
-  }
-  // Big Impact
-  return [...rows]
-    .filter(r => r.severity === 'critical' || r.severity === 'high')
-    .sort((a, b) => ((b.score_delta ?? 0) - (a.score_delta ?? 0)))
-    .slice(0, 8)
-}
-
 export function EchoPicksPanel() {
   const { rows, loading, setRows } = usePendingFixActions()
   const [tab, setTab] = useState<Tab>('echo')
@@ -59,12 +41,16 @@ export function EchoPicksPanel() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  const displayed = tabRows(rows, tab)
+  // Tab logic lives in lib/actionCategories so the dashboard panel and the
+  // Fix Actions page can never drift apart (they previously did — Echo Picks
+  // and Big Impact showed identical lists for high-severity-heavy accounts).
+  const tabbed = useMemo(() => splitTabs(rows, 8), [rows])
+  const displayed = tabbed[tab]
 
   const openListing = (row: FixActionRow) => {
     const id = row.listing?.id ?? row.listing_id
     if (id) navigate(`/app/listings/${id}`)
-    else navigate('/app/actions?tab=echo')
+    else navigate('/app/actions')
   }
 
   const handleApply = async (row: FixActionRow) => {
@@ -132,6 +118,11 @@ export function EchoPicksPanel() {
         ))}
       </div>
 
+      {/* Why-this-tab explanation (Section 4: explain the category itself) */}
+      <p className="px-4 pb-1 text-[10px] leading-snug text-muted-foreground/80">
+        {TAB_MEANINGS[tab]}
+      </p>
+
       {/* Cards */}
       <div className="px-3 pb-3 pt-1 space-y-2">
         {loading ? (
@@ -141,11 +132,11 @@ export function EchoPicksPanel() {
         ) : displayed.length === 0 ? (
           <div className="py-6 text-center">
             <p className="text-xs text-muted-foreground">
-              {tab === 'echo'
-                ? 'Echo is scanning your listings — check back shortly.'
+              {rows.length === 0
+                ? 'Your queue is clear — nothing needs your approval right now. New finds land here after the nightly scan.'
                 : tab === 'quick'
-                ? 'No one-click fixes available right now.'
-                : 'No high-impact actions pending.'}
+                ? 'No one-tap fixes right now — the other tabs have items that need a quick review.'
+                : 'Nothing fits this view — peek at the other tabs.'}
             </p>
           </div>
         ) : (

@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { MobileHeaderProvider } from '@/contexts/MobileHeaderContext'
 
 import { Echo } from '@/components/echo/Echo'
+import { ReportBugButton } from '@/components/ReportBugButton'
 import { EtsyDisclaimer } from '@/components/EtsyDisclaimer'
 import { ListingActionsProvider } from '@/hooks/useListingActions'
 import { BulkProgressPanel } from '@/components/listings/BulkProgressPanel'
@@ -102,6 +103,7 @@ export function AppLayout() {
       </main>
       <Toaster />
       <Echo />
+      <ReportBugButton />
       <BulkProgressPanel />
       {/* AchievementToast removed — achievements disabled pre-launch */}
       <ScoreGainToast />

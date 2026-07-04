@@ -129,12 +129,29 @@ export function useEchoChat() {
       })
 
       if (invokeErr) {
-        const ctx = (invokeErr as { context?: { status?: number } }).context
-        if (ctx?.status === 429) {
+        // Pull the real status + error code out of the response so distinct
+        // failures (daily quota, AI rate limit, AI credits, server error) get
+        // distinct messages instead of one generic "something went wrong".
+        const ctx = (invokeErr as { context?: Response }).context
+        const status = ctx?.status
+        let code = ''
+        try {
+          const body = ctx && typeof ctx.clone === 'function' ? await ctx.clone().json() : null
+          code = typeof body?.error === 'string' ? body.error : ''
+        } catch { /* body wasn't JSON */ }
+        console.error('[echo-chat] request failed', { status, code, invokeErr })
+
+        if (status === 429 && code === 'chat_limit_reached') {
           setUsage((u) => u ? { ...u, atLimit: true } : { used: FREE_LIMIT_FALLBACK, limit: FREE_LIMIT_FALLBACK, tier: 'free', atLimit: true })
+          setError("You've used today's Echo chats on your current plan — they reset tomorrow.")
+          setErrorKind('rate_limited')
+        } else if (status === 429) {
           setError("I'm getting a lot of questions right now — give me a moment and try again.")
           setErrorKind('rate_limited')
-        } else if (ctx?.status === 400) {
+        } else if (status === 402 || code === 'ai_credits_exhausted') {
+          setError("My AI service hit its usage limit — the team's been notified automatically. Try again in a little while.")
+          setErrorKind('other')
+        } else if (status === 400) {
           setError('Message is too long — please keep it under 600 characters.')
           setErrorKind('too_long')
         } else {

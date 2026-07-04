@@ -13,8 +13,8 @@ import { useNavigate } from 'react-router-dom'
 
 
 const SEVERITY_STYLES: Record<string, { bg: string; fg: string; label: string }> = {
-  critical: { bg: 'bg-red-500/15', fg: 'text-red-400', label: 'Critical' },
-  high:     { bg: 'bg-amber-500/15', fg: 'text-amber-400', label: 'High' },
+  critical: { bg: 'bg-red-500/15', fg: 'text-red-600 dark:text-red-400', label: 'Critical' },
+  high:     { bg: 'bg-amber-500/15', fg: 'text-amber-700 dark:text-amber-400', label: 'High' },
   medium:   { bg: 'bg-primary/15', fg: 'text-primary', label: 'Medium' },
   low:      { bg: 'bg-muted/40', fg: 'text-muted-foreground', label: 'Low' },
 }
@@ -129,44 +129,44 @@ export function FixActionCard({ row, compact, onChange }: Props) {
 
   if (collapsed === 'applied') {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-300 animate-fade-in">
+      <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300 animate-fade-in">
         <Check className="h-4 w-4" /> Done — {factorLabel}
       </div>
     )
   }
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] overflow-hidden">
+    <div className="rounded-lg border border-border bg-surface-1 overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 px-3 pt-3">
         <div className="min-w-0 flex-1">
           {/* PRIMARY: listing name (or factor label if shop-level / compact) */}
           {listingTitle && !compact ? (
-            <p className="text-sm font-semibold text-white leading-snug line-clamp-2">
+            <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
               {listingTitle}
             </p>
           ) : (
-            <p className="text-sm font-semibold text-white truncate">{factorLabel}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{factorLabel}</p>
           )}
           {/* SECONDARY: factor key · dimension · mode + severity */}
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               {listingTitle && !compact ? factorLabel : dimLabel}
             </span>
             {listingTitle && !compact && (
-              <span className="text-[10px] uppercase tracking-wide text-slate-600">· {dimLabel}</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">· {dimLabel}</span>
             )}
             {localRow.mode === 'guided' && (
-              <span className="text-[10px] uppercase tracking-wide text-amber-400">· Guided</span>
+              <span className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-400">· Guided</span>
             )}
             {localRow.mode === 'inform' && (
-              <span className="text-[10px] uppercase tracking-wide text-slate-400">· Heads up</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">· Heads up</span>
             )}
             <Badge className={`${sev.bg} ${sev.fg} border-transparent text-[10px] uppercase tracking-wide ml-auto`}>{sev.label}</Badge>
           </div>
         </div>
         {!compact && (
-          <button onClick={openDismiss} disabled={busy} className="text-slate-500 hover:text-white shrink-0" aria-label="Dismiss">
+          <button onClick={openDismiss} disabled={busy} className="text-muted-foreground hover:text-foreground shrink-0" aria-label="Dismiss">
             <X className="h-3.5 w-3.5" />
           </button>
         )}
@@ -175,19 +175,19 @@ export function FixActionCard({ row, compact, onChange }: Props) {
       {/* Body */}
       <div className="px-3 py-2.5">
         {localRow.rationale && (
-          <p className="text-xs leading-relaxed text-slate-300">{localRow.rationale}</p>
+          <p className="text-xs leading-relaxed text-foreground/80">{localRow.rationale}</p>
         )}
 
         {/* AUTO mode — diff view (skip for unified-optimize: AI rewrites the value) */}
         {!useUnifiedOptimize && localRow.mode === 'auto' && !editing && (
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-md border border-white/5 bg-black/20 p-2">
-              <p className="text-[9px] uppercase tracking-wide text-slate-500 mb-1">Current</p>
-              <p className="text-xs text-slate-400 whitespace-pre-wrap break-words">{valueToString(localRow.current_value) || '—'}</p>
+            <div className="rounded-md border border-border bg-surface-2 p-2">
+              <p className="text-[9px] uppercase tracking-wide text-muted-foreground mb-1">Current</p>
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{valueToString(localRow.current_value) || '—'}</p>
             </div>
             <div className="rounded-md border border-primary/30 bg-primary/8 p-2">
               <p className="text-[9px] uppercase tracking-wide text-primary mb-1">Proposed</p>
-              <p className="text-xs text-slate-100 whitespace-pre-wrap break-words">{valueToString(localRow.proposed_value) || '—'}</p>
+              <p className="text-xs text-foreground whitespace-pre-wrap break-words">{valueToString(localRow.proposed_value) || '—'}</p>
             </div>
           </div>
         )}
@@ -205,12 +205,12 @@ export function FixActionCard({ row, compact, onChange }: Props) {
 
         {/* GUIDED mode — read-only content + copy (skip for unified-optimize) */}
         {!useUnifiedOptimize && localRow.mode === 'guided' && (
-          <div className="mt-2 rounded-md border border-white/5 bg-black/20 p-2">
-            <p className="text-xs text-slate-200 whitespace-pre-wrap break-words">
+          <div className="mt-2 rounded-md border border-border bg-surface-2 p-2">
+            <p className="text-xs text-foreground/90 whitespace-pre-wrap break-words">
               {localRow.guided_payload?.copyable_content ?? valueToString(localRow.proposed_value)}
             </p>
             {localRow.guided_payload?.instructions && (
-              <p className="mt-1.5 text-[10px] text-slate-500">{localRow.guided_payload.instructions}</p>
+              <p className="mt-1.5 text-[10px] text-muted-foreground">{localRow.guided_payload.instructions}</p>
             )}
           </div>
         )}
@@ -218,8 +218,8 @@ export function FixActionCard({ row, compact, onChange }: Props) {
 
         {localRow.failure_reason && (
           <div className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1.5">
-            <AlertTriangle className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
-            <p className="text-[11px] text-amber-300">{localRow.failure_reason}</p>
+            <AlertTriangle className="h-3 w-3 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-[11px] text-amber-700 dark:text-amber-300">{localRow.failure_reason}</p>
           </div>
         )}
       </div>
@@ -227,18 +227,18 @@ export function FixActionCard({ row, compact, onChange }: Props) {
       {/* Dismiss reason picker */}
       {showDismissPicker && (
         <div className="border-t border-amber-500/20 bg-amber-500/5 px-3 py-2 animate-accordion-down">
-          <p className="text-[11px] text-slate-300 mb-1.5">Why are you dismissing this?</p>
+          <p className="text-[11px] text-foreground/80 mb-1.5">Why are you dismissing this?</p>
           <div className="flex flex-wrap items-center gap-1.5">
             <Button size="sm" variant="outline" disabled={busy} onClick={() => doDismiss('already_done')} className="h-6 text-[11px] px-2">Already done</Button>
             <Button size="sm" variant="outline" disabled={busy} onClick={() => doDismiss('not_relevant')} className="h-6 text-[11px] px-2">Not relevant</Button>
             <Button size="sm" variant="outline" disabled={busy} onClick={() => doDismiss('will_do_later')} className="h-6 text-[11px] px-2">Will do later</Button>
-            <button onClick={cancelDismiss} className="text-[11px] text-slate-400 hover:text-white ml-1">Cancel</button>
+            <button onClick={cancelDismiss} className="text-[11px] text-muted-foreground hover:text-foreground ml-1">Cancel</button>
           </div>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-white/5 bg-black/20 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border bg-surface-2 px-3 py-2">
         {useUnifiedOptimize ? (
           <>
             <Button

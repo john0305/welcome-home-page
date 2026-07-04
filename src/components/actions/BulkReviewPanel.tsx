@@ -1,0 +1,381 @@
+/**
+ * BulkReviewPanel — category-level review & approval (Section 4).
+ *
+ * Groups pending fix_actions into plain-language categories ("Empty tag
+ * slots", "Short titles", "Seasonal & trend check-ins", …). Each category
+ * explains WHY its items are grouped, can be approved as a whole, or
+ * expanded for a fast item-by-item approve/skip pass. Nothing is pushed to
+ * Etsy without an explicit approval click — there is no auto-apply anywhere.
+ */
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Check, ChevronDown, ChevronUp, Loader2, ShoppingBag, SkipForward,
+  Layers, Undo2, Sparkles, ThumbsUp,
+} from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
+import {
+  applyFixAction, dismissFixAction, type FixActionRow,
+} from '@/hooks/useFixActions'
+import {
+  groupIntoCategories, isBulkApplicable, type ActionCategory,
+} from '@/lib/actionCategories'
+import { FixActionCard } from './FixActionCard'
+
+interface Props {
+  rows: FixActionRow[]
+  loading: boolean
+  onChange: () => void
+}
+
+function valuePreview(v: unknown): string {
+  if (v == null) return ''
+  if (typeof v === 'string') return v
+  if (Array.isArray(v)) return v.join(', ')
+  return JSON.stringify(v)
+}
+
+type TrendEvidence = {
+  lifecycle_id?: string
+  version_id?: string | null
+  label?: string | null
+}
+
+export function BulkReviewPanel({ rows, loading, onChange }: Props) {
+  const categories = useMemo(() => groupIntoCategories(rows), [rows])
+  const [openCats, setOpenCats] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null)
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null)
+  const [rowBusy, setRowBusy] = useState<string | null>(null)
+  const [detailRow, setDetailRow] = useState<string | null>(null)
+  const [handled, setHandled] = useState<Set<string>>(new Set())
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
+  if (!loading && rows.length === 0) return null
+
+  const toggleCat = (label: string) => {
+    setOpenCats(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
+  }
+
+  const markHandled = (id: string) => setHandled(prev => new Set(prev).add(id))
+
+  const approveOne = async (row: FixActionRow) => {
+    setRowBusy(row.id)
+    try {
+      const res = await applyFixAction(row.id)
+      if (res.ok) {
+        markHandled(row.id)
+      } else {
+        toast({
+          title: "Couldn't apply that one",
+          description: res.reason ?? 'Switched to manual mode — open it to see details.',
+          variant: 'destructive',
+        })
+        onChange()
+      }
+    } catch (e) {
+      toast({ title: 'Apply failed', description: e instanceof Error ? e.message : String(e), variant: 'destructive' })
+    } finally {
+      setRowBusy(null)
+    }
+  }
+
+  const skipOne = async (row: FixActionRow) => {
+    setRowBusy(row.id)
+    try {
+      await dismissFixAction(row.id, 'will_do_later')
+      markHandled(row.id)
+    } finally {
+      setRowBusy(null)
+    }
+  }
+
+  const approveCategory = async (cat: ActionCategory) => {
+    const targets = cat.bulkApplicable.filter(r => !handled.has(r.id))
+    if (targets.length === 0) return
+    setBulkBusy(cat.label)
+    setBulkProgress({ done: 0, total: targets.length })
+    let ok = 0
+    let failed = 0
+    for (const row of targets) {
+      try {
+        const res = await applyFixAction(row.id)
+        if (res.ok) { ok++; markHandled(row.id) } else failed++
+      } catch { failed++ }
+      setBulkProgress(p => p ? { ...p, done: p.done + 1 } : p)
+    }
+    setBulkBusy(null)
+    setBulkProgress(null)
+    toast({
+      title: ok > 0 ? `${ok} fix${ok === 1 ? '' : 'es'} applied` : 'Nothing applied',
+      description: failed > 0
+        ? `${failed} couldn't be applied automatically — they're still in the list for individual review.`
+        : ok > 0 ? 'Scores are recalculating now.' : undefined,
+      variant: failed > 0 && ok === 0 ? 'destructive' : 'success',
+    })
+    onChange()
+  }
+
+  // ── Trend check-in resolution (Section 5 loop closing) ────────────────────
+  const resolveTrend = async (
+    row: FixActionRow,
+    outcome: 'reverted' | 'kept' | 'refreshed',
+  ) => {
+    const ev = (row.evidence ?? {}) as TrendEvidence
+    setRowBusy(row.id)
+    try {
+      if (outcome === 'reverted') {
+        if (!ev.version_id) throw new Error('No saved snapshot to revert to.')
+        const { data, error } = await supabase.functions.invoke('revert-listing', {
+          body: { version_id: ev.version_id },
+        })
+        if (error || !(data as { success?: boolean })?.success) {
+          throw new Error('Revert failed — try again from the listing page.')
+        }
+      }
+      if (ev.lifecycle_id) {
+        // trend_lifecycles is new this pass — the generated Supabase types
+        // don't know it yet (regenerated by Lovable after the migration
+        // lands). Bypass the stale table-name union locally.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sb = supabase as unknown as { from: (t: string) => any }
+        await sb.from('trend_lifecycles').update({
+          status: outcome,
+          resolved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', ev.lifecycle_id)
+      }
+      await dismissFixAction(row.id, 'already_done')
+      markHandled(row.id)
+      if (outcome === 'refreshed' && row.listing_id) {
+        navigate(`/app/listings/${row.listing_id}`)
+      } else {
+        toast({
+          title: outcome === 'reverted' ? 'Reverted to the original' : 'Keeping the change',
+          description: outcome === 'reverted'
+            ? 'The pre-trend title, tags and description are back on Etsy.'
+            : 'Good call — it stays as-is and we\'ll keep tracking it.',
+          variant: 'success',
+        })
+      }
+    } catch (e) {
+      toast({ title: 'Something went wrong', description: e instanceof Error ? e.message : String(e), variant: 'destructive' })
+    } finally {
+      setRowBusy(null)
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Layers className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-foreground" style={{ fontFamily: 'Bricolage Grotesque, system-ui, sans-serif' }}>
+            Review by category
+          </h2>
+          <p className="text-[11px] text-muted-foreground">
+            Approve a whole group at once, or open it to go one by one. Nothing changes on Etsy until you approve it.
+          </p>
+        </div>
+      </div>
+
+      {categories.map(cat => {
+        const open = openCats.has(cat.label)
+        const remaining = cat.rows.filter(r => !handled.has(r.id))
+        if (remaining.length === 0) return null
+        const bulkTargets = cat.bulkApplicable.filter(r => !handled.has(r.id))
+        const isTrendCat = cat.rows.some(r => r.factor_key === 'trend_expiry_review')
+        const isBulking = bulkBusy === cat.label
+
+        return (
+          <div key={cat.label} className="rounded-2xl border border-border bg-surface-1 overflow-hidden">
+            {/* Category header */}
+            <div className="px-4 py-3.5">
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => toggleCat(cat.label)}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isTrendCat && <Sparkles className="h-3.5 w-3.5 text-violet-500 shrink-0" />}
+                    <span className="text-sm font-semibold text-foreground">{cat.label}</span>
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-surface-2 text-muted-foreground">
+                      {remaining.length} listing{remaining.length === 1 ? '' : 's'}
+                    </span>
+                    {cat.totalDelta > 0 && (
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                        +{cat.totalDelta} pts together
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{cat.explanation}</p>
+                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {bulkTargets.length > 1 && !isTrendCat && (
+                    <button
+                      type="button"
+                      disabled={isBulking || bulkBusy !== null}
+                      onClick={() => approveCategory(cat)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {isBulking
+                        ? <><Loader2 className="h-3 w-3 animate-spin" /> {bulkProgress ? `${bulkProgress.done}/${bulkProgress.total}` : ''}</>
+                        : <><ThumbsUp className="h-3 w-3" /> Approve all {bulkTargets.length}</>}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleCat(cat.label)}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-surface-2 transition-colors"
+                    aria-label={open ? 'Collapse' : 'Expand'}
+                  >
+                    {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Expanded: fast per-item review */}
+            {open && (
+              <div className="border-t border-border bg-surface-2/50 px-3 py-3 space-y-2">
+                {remaining.map(row => {
+                  const busy = rowBusy === row.id
+                  const showDetail = detailRow === row.id
+                  const isTrend = row.factor_key === 'trend_expiry_review'
+                  const ev = (row.evidence ?? {}) as TrendEvidence
+
+                  return (
+                    <div key={row.id} className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+                      <div className="flex items-start gap-3 px-3 py-2.5">
+                        <div className="h-9 w-9 rounded-md shrink-0 overflow-hidden flex items-center justify-center bg-border mt-0.5">
+                          {row.listing?.thumbnail_url ? (
+                            <img src={row.listing.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground leading-snug line-clamp-1">
+                            {row.listing?.title ?? 'Shop-level'}
+                          </p>
+                          {isTrend ? (
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{row.rationale}</p>
+                          ) : (
+                            <>
+                              {row.rationale && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{row.rationale}</p>
+                              )}
+                              {isBulkApplicable(row) && (
+                                <p className="text-[11px] mt-1 text-foreground/70 line-clamp-1">
+                                  <span className="text-muted-foreground">New: </span>
+                                  {valuePreview(row.proposed_value)}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        {(row.score_delta ?? 0) > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0 mt-0.5">
+                            +{row.score_delta} pts
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Quick actions */}
+                      <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-3 py-2">
+                        {isTrend ? (
+                          <>
+                            {ev.version_id && (
+                              <button
+                                type="button" disabled={busy}
+                                onClick={() => resolveTrend(row, 'reverted')}
+                                className="inline-flex items-center gap-1 rounded-md border border-border text-xs font-semibold px-2.5 py-1 hover:bg-surface-2 transition-colors disabled:opacity-50"
+                              >
+                                {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />} Revert to original
+                              </button>
+                            )}
+                            <button
+                              type="button" disabled={busy}
+                              onClick={() => resolveTrend(row, 'refreshed')}
+                              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                            >
+                              <Sparkles className="h-3 w-3" /> Refresh it
+                            </button>
+                            <button
+                              type="button" disabled={busy}
+                              onClick={() => resolveTrend(row, 'kept')}
+                              className="inline-flex items-center gap-1 rounded-md text-xs font-semibold px-2.5 py-1 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50"
+                            >
+                              <Check className="h-3 w-3" /> Leave as-is
+                            </button>
+                          </>
+                        ) : isBulkApplicable(row) ? (
+                          <>
+                            <button
+                              type="button" disabled={busy}
+                              onClick={() => approveOne(row)}
+                              className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground text-xs font-semibold px-2.5 py-1 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+                            >
+                              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Approve
+                            </button>
+                            <button
+                              type="button" disabled={busy}
+                              onClick={() => skipOne(row)}
+                              className="inline-flex items-center gap-1 rounded-md text-xs font-semibold px-2.5 py-1 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50"
+                            >
+                              <SkipForward className="h-3 w-3" /> Skip
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailRow(showDetail ? null : row.id)}
+                              className="ml-auto text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {showDetail ? 'Hide details' : 'See details'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setDetailRow(showDetail ? null : row.id)}
+                              className="inline-flex items-center gap-1 rounded-md border border-border text-xs font-semibold px-2.5 py-1 hover:bg-surface-2 transition-colors"
+                            >
+                              {showDetail ? 'Hide' : 'Review'}
+                            </button>
+                            <button
+                              type="button" disabled={busy}
+                              onClick={() => skipOne(row)}
+                              className="inline-flex items-center gap-1 rounded-md text-xs font-semibold px-2.5 py-1 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50"
+                            >
+                              <SkipForward className="h-3 w-3" /> Skip
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {showDetail && !isTrend && (
+                        <div className="border-t border-border p-3">
+                          <FixActionCard row={row} compact onChange={() => { markHandled(row.id); setDetailRow(null) }} />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </section>
+  )
+}

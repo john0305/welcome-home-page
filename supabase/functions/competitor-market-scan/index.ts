@@ -337,8 +337,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        // New competitors: in current top-20 but absent from previous top-20
-        for (const curr of parsedListings) {
+        // New competitors: only the current top-20 matter — comparing all 100
+        // results produced dozens of noise alerts per term on churny searches.
+        for (const curr of parsedListings.slice(0, 20)) {
           if (!prevIds.has(curr.etsy_listing_id)) {
             alerts.push({
               user_id,
@@ -370,6 +371,21 @@ Deno.serve(async (req) => {
         console.error(`scan failed for "${searchTerm}"`, e);
         failedTerms.push(searchTerm);
       }
+    }
+
+    // Retention (cost + ToS storage-minimization): each snapshot is a ~100-
+    // listing JSON blob, up to 12/night/user — unbounded growth was the
+    // pipeline's biggest cost exposure. Change detection only ever reads the
+    // single most recent snapshot per term, so 30 days is generous.
+    try {
+      const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString();
+      await supabase
+        .from("market_snapshots")
+        .delete()
+        .eq("user_id", user_id)
+        .lt("captured_at", cutoff);
+    } catch (e) {
+      console.warn("market_snapshots retention prune failed", e);
     }
 
     return json({

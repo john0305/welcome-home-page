@@ -121,6 +121,49 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
+      // ── Trend/seasonal lifecycle (Section 5) ───────────────────────────
+      // Trend-driven fixes get a relevance window. Snapshot the pre-fix
+      // listing (local row is still pre-patch at this point) so the seller
+      // can revert with one tap when the trend ends, then record the
+      // lifecycle so nightly-action-scan resurfaces it at expiry.
+      const TREND_FACTORS: Record<string, { label: string; windowDays: number }> = {
+        market_tag_gap: { label: "Trending tags", windowDays: 60 },
+        market_title_length: { label: "Market title refresh", windowDays: 90 },
+      };
+      const trendMeta = TREND_FACTORS[action.factor_key];
+      if (trendMeta && action.listing_id) {
+        try {
+          const { data: preFix } = await supabase
+            .from("listings")
+            .select("title, description, tags, materials, price")
+            .eq("id", action.listing_id)
+            .maybeSingle();
+          const { data: version } = await supabase.from("listing_versions").insert({
+            listing_id: action.listing_id,
+            user_id: userId,
+            source: "trend_fix",
+            reason: `Pre-trend snapshot (${action.factor_key})`,
+            title: preFix?.title ?? null,
+            description: preFix?.description ?? null,
+            tags: preFix?.tags ?? [],
+            materials: preFix?.materials ?? [],
+            price: preFix?.price ?? null,
+          }).select("id").single();
+          await supabase.from("trend_lifecycles").insert({
+            user_id: userId,
+            listing_id: action.listing_id,
+            fix_action_id: action.id,
+            version_id: version?.id ?? null,
+            trend_key: action.factor_key,
+            label: trendMeta.label,
+            applied_at: appliedAt,
+            expected_end_at: new Date(Date.now() + trendMeta.windowDays * 86_400_000).toISOString(),
+          });
+        } catch (e) {
+          console.warn("trend lifecycle record failed", e);
+        }
+      }
+
       // Log write to quota tracker + action history
       await Promise.all([
         logWriteCall(supabase, {

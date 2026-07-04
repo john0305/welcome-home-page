@@ -357,3 +357,71 @@ of screens that can't be visually verified without auth.
 1. **Authed-screen visual QA needs the owner's eyes** — no local login means Dashboard/Listings/Intelligence/Performance/Fix-Actions/Personalize interiors were audited by code + token math, not screenshots. The systemic fixes propagate to them, but final visual sign-off is the owner's.
 2. `/register` waitlist page mixes light-tuned tokens on a hardcoded dark card (2 small helper-text nodes at 3.08:1). Reconciling that semi-dark marketing page's palette is a separate task.
 3. Deferred backend items from §7.12 (competitor-scan ToS, types regen, AppContext refactor, 500+ listings, Pinterest, photo apply-in-app, review-text mining) remain as listed.
+
+---
+
+## 8. UX & Product-Vision Pass (2026-07-04)
+
+Full-experience pass against the assistant-not-dashboard vision (UX Flow Brief). Everything below is live in this repo; Lovable must apply two migrations and redeploy the touched edge functions (see the handoff prompt delivered with this pass).
+
+### 8.1 Echo chat — root cause of "Something went wrong on my end"
+
+Traced, not guessed: `echo-chat` windows history to the last 20 messages. Turns alternate user/assistant and always end with the just-persisted user message, so **from the 11th turn of a session the window starts with an assistant message**, which the Anthropic Messages API rejects (400 — first message must be `user`). The failure is sticky because `ensureSession` refreshes `updated_at` on every attempt and both client and server resume the most-recent session within 24 h — an active user's session never rolls over, so chat stayed broken indefinitely. The Gemini gateway path tolerates a leading assistant turn, which is why this only surfaced after `echo_chat` moved to the Anthropic provider (`ai_model_config` maps it to `claude-sonnet-4-6`, a valid model id — that was ruled out).
+
+Fixes (defense at the shared layer so every Anthropic caller is covered):
+- `_shared/ai-dispatch.ts` `callAnthropic()` now merges consecutive same-role messages and drops any leading assistant turn.
+- `chatCompletion()` logs provider failures via `console.error` **and** into `ai_usage_events` (new `error_status`/`error_message` columns, migration `20260704100000_ai_usage_error_logging.sql`) so degraded AI service is admin-visible (Section 12a tie-in).
+- `useEchoChat` now reads the response body/status and distinguishes daily-quota 429, AI rate-limit 429, 402 credits-exhausted, and 5xx with distinct friendly messages plus `console.error` diagnostics.
+
+### 8.2 Dashboard fixes
+
+- "See what changed" goes to `/app/performance` (was Fix Actions — Performance is where trend/score movement lives).
+- "Views This Week" now computes the true 7-day delta from cumulative `shop_snapshots.total_views` (baseline = snapshot closest to 7 days ago), with the all-time total as subtext. Previously it showed the lifetime total, plus a score-delta mislabeled as a views percentage.
+- KPI order: Active Listings, Views This Week, Needs Attention, Avg. Listing Grade. Judgment call: Needs Attention sits beside Views because "attention coming in" + "what needs doing" is the at-a-glance pair; grade is the slow-moving summary.
+- `ScoreClimbBanner`: fixed white-on-light text (hardcoded `text-white` that bypassed the theme remap — same root cause as the earlier History-tab bug); fixed the false "up since your last visit" on plain refresh by storing `{value, ts}` and only comparing against a stored value at least 30 minutes old (intra-pageload recomputes no longer count as visits); dismissal now fades over 400 ms instead of vanishing.
+- Contrast sweep for the same pattern: `FixActionCard` and the Fix Actions page still carried dark-era classes (`text-white`, `text-slate-*`, `bg-white/[0.02]`, `bg-black/20`) — all remapped to theme tokens.
+
+### 8.3 Route & naming cleanup (Score Roadmap becomes Fix Actions)
+
+`/app/actions` is the canonical route; `/app/score-roadmap` and `/app/insights` are now redirects. All in-app references updated (Dashboard hero, MobileBottomNav — now labeled "Fixes" to match desktop, ScoreFactorRows, OptimizationScoreCard, StoreHealthScoreCard, RoadmapContextBanner). Page header renamed "Fix Actions". `ScoreRoadmap.tsx` remains the component filename (rename deferred to avoid churn).
+
+### 8.4 Bulk review & approval (new, Section 4)
+
+- `src/lib/actionCategories.ts` — single source of truth for (a) the Echo Picks / Quick Wins / Big Impact tabs with structurally different criteria (echo = delta-per-effort, diversified max 2 per listing; quick = low-effort/one-tap; impact = raw delta) plus visible per-tab meaning (`TAB_MEANINGS`), and (b) factor-level categories with plain-language explanations. This fixes the identical-tabs bug (the old echo fallback of "all rows by severity" collapsed into impact's "high/critical by severity" on high-severity-heavy accounts).
+- `src/components/actions/BulkReviewPanel.tsx` on the Fix Actions page — approve a whole category ("Approve all N", sequential with progress), or expand for a fast per-item Approve / Skip / See-details pass. Only rows with `mode='auto'` and a concrete `proposed_value` are bulk-applicable; guided rows surface individually.
+- **Auto-apply removed** from `nightly-action-scan` (Step 4 deleted). Decision per brief: every change requires explicit approval before touching Etsy — no auto-apply, ever, regardless of opt-in. `auto_apply_preferences` remains in the DB but nothing consumes it.
+
+### 8.5 Trend/seasonal lifecycle loop (new, Section 5)
+
+Suggest, approve, track, resurface, decide:
+- Migration `20260704101000_trend_lifecycles.sql` — `trend_lifecycles` (status: active, awaiting_review, then reverted / kept / refreshed; RLS owner select/update).
+- `apply-fix-action`: applying a trend factor (`market_tag_gap` 60 days, `market_title_length` 90 days) snapshots the pre-fix listing into `listing_versions` (`source='trend_fix'`) and records the lifecycle.
+- `nightly-action-scan` gains `resurfaceEndedTrends()`: expired windows produce a pending `trend_expiry_review` fix_action (evidence carries `lifecycle_id` + `version_id`), which groups under "Seasonal & trend check-ins" in bulk review.
+- The UI check-in row offers **Revert to original** (invokes `revert-listing` with the stored version), **Refresh it** (routes into the optimize flow), or **Leave as-is** — each resolves the lifecycle.
+- Note: `trend_lifecycles` is not yet in the generated `types.ts`; `BulkReviewPanel` uses a localized cast until Lovable regenerates types.
+
+### 8.6 Nav/IA + beta affordances (Section 3)
+
+- Sidebar order now follows the daily loop: Dashboard, Fix Actions, Listings, Performance, Intelligence.
+- `ReportBugButton` (new) — persistent floating "Report a bug" pill on every authenticated page (bottom-left; clears the mobile bottom nav), reusing `EchoFeedbackForm`.
+- Onboarding: "Skip for now" on ConnectEtsy actually skips now (session flag honored by `OnboardingRedirects`; previously it bounced straight back, which read as a broken page).
+
+### 8.7 "Check back later" audit (Section 6)
+
+Root cause of the named bug: the Dashboard's Echo's Insight waited on `shop_intelligence.niche_summary`, **a field nothing in the pipeline ever writes** — the placeholder was permanent regardless of syncs. Replaced with a derived-insight chain that always renders something real: top market opportunity, else 7-day score trend, else local grade findings, else sync status. EchoPicksPanel empty states were rewritten the same way. Remaining "check back" strings are honest time-gated metrics (7-day attribution windows, two-snapshot trends) — acceptable interim states, listed in the pass report.
+
+### 8.8 Echo panel (Section 9a)
+
+- Side toggle (left/right, persisted in `localStorage['echo:side']`) for when the panel covers content the seller is reading.
+- Desktop click-off now minimizes the panel back to the bubble (chat state kept; elements marked `data-echo-toggle` are excluded so toggle buttons don't double-fire).
+- Responses: persona formatting rules upgraded (bold "What I found" / "What I'd do" section labels, no walls of text) and Echo now links directly to in-app routes; `EchoMessage` renders `/app/...` links through the router.
+
+### 8.9 Competitive intelligence (Section 9b)
+
+- Fixed: new-competitor detection compared all 100 results against the previous snapshot despite the comment saying top-20 (alert spam); now capped at top-20.
+- Fixed: `market_snapshots` had no retention — a roughly 100-listing JSON blob per term, up to 12 terms per night per user, grew without bound; now pruned to 30 days (change detection only ever reads the latest snapshot per term). This also aligns with Etsy's storage-minimization term.
+- Flagged, not changed (pending the owner's compliance decision per `documents/etsy_compliance_trend_design.md`): the scan itself remains the high-risk ToS surface; `review_count` actually stores `num_favorers` (favorites, not reviews) — any UI presenting it as reviews overstates the data; `return_policy_present` is hardcoded `false` for competitors.
+
+### 8.10 Landing page (Section 9)
+
+Hero reframed from fear-led ("Your listings are invisible") to assistant-led ("Your Etsy shop just hired its first assistant"); subheads describe the watch, propose, approve, track loop. Contrast-pair examples rewritten so every claim is deliverable today: no competitor-specific callouts (compliance pending), no auto-apply language, and the pricing example was replaced with a photo-slots example backed by media scoring.

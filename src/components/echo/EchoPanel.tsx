@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { X, Maximize2, Minimize2 } from 'lucide-react'
+import { X, Maximize2, Minimize2, PanelLeft, PanelRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEchoChat } from '@/hooks/useEchoChat'
 import { usePageContext } from '@/hooks/usePageContext'
@@ -35,9 +35,37 @@ export function EchoPanel({ onClose, onAssistantMessage }: Props) {
     sendMessage, submitFeedback, clearError, contextLoaded,
   } = useEchoChat()
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
   const [composerValue, setComposerValue] = useState('')
   const [expanded, setExpanded] = useState(false)
+  // Panel side (Section 9a): default right, but the seller can move it left
+  // when it covers something they're reading. Persisted across sessions.
+  const [side, setSide] = useState<'left' | 'right'>(() => {
+    try { return localStorage.getItem('echo:side') === 'left' ? 'left' : 'right' } catch { return 'right' }
+  })
+  const toggleSide = () => setSide((s) => {
+    const next = s === 'left' ? 'right' : 'left'
+    try { localStorage.setItem('echo:side', next) } catch { /* ignore */ }
+    return next
+  })
   const lastNotifiedRef = useRef<string | null>(null)
+
+  // Desktop click-off minimize (Section 9a): clicking the main page collapses
+  // the panel back to the bubble (state is kept — reopening resumes the chat).
+  // Buttons that toggle Echo themselves are excluded via [data-echo-toggle].
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!window.matchMedia('(min-width: 768px)').matches) return
+      const el = panelRef.current
+      const target = e.target as HTMLElement | null
+      if (!el || !target) return
+      if (el.contains(target)) return
+      if (target.closest?.('[data-echo-toggle]')) return
+      onClose()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [onClose])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -88,10 +116,13 @@ export function EchoPanel({ onClose, onAssistantMessage }: Props) {
         onClick={onClose}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-label="Echo chat"
         className={`echo-panel fixed z-50 flex flex-col overflow-hidden border echo-panel-enter
-                   inset-x-0 top-0 md:inset-auto md:bottom-[4.5rem] md:right-5 md:rounded-[var(--radius-xl)] ${
+                   inset-x-0 top-0 md:inset-auto md:bottom-[4.5rem] md:rounded-[var(--radius-xl)] ${
+                     side === 'left' ? 'md:left-5' : 'md:right-5'
+                   } ${
                      expanded
                        ? 'md:w-[min(720px,calc(100vw-2.5rem))] md:h-[min(820px,calc(100vh-6rem))]'
                        : 'md:w-[390px] md:h-[540px]'
@@ -106,6 +137,14 @@ export function EchoPanel({ onClose, onAssistantMessage }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-label-sm text-muted-foreground/60">{pageCtx.pageLabel}</span>
+            <button
+              onClick={toggleSide}
+              className="hidden md:inline-flex text-slate-500 hover:text-white transition-colors"
+              aria-label={side === 'right' ? 'Move Echo to the left side' : 'Move Echo to the right side'}
+              title={side === 'right' ? 'Move to left' : 'Move to right'}
+            >
+              {side === 'right' ? <PanelLeft className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+            </button>
             <button
               onClick={() => setExpanded((e) => !e)}
               className="hidden md:inline-flex text-slate-500 hover:text-white transition-colors"

@@ -193,7 +193,16 @@ export default function ConnectEtsy() {
           )}
 
           <div className="text-center">
-            <Button variant="link" size="sm" onClick={() => navigate('/app/dashboard')}>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => {
+                // Without this flag, OnboardingRedirects bounces unconnected
+                // users straight back here — "Skip" looped instead of skipping.
+                try { sessionStorage.setItem('radariq_connect_skipped', '1') } catch { /* ignore */ }
+                navigate('/app/dashboard')
+              }}
+            >
               Skip for now
             </Button>
           </div>

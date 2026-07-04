@@ -146,22 +146,24 @@ export function estimateCostUsd(model: string, usage?: ChatResult["usage"]): num
 
 async function logUsage(opts: ChatOptions, result: ChatResult): Promise<void> {
   try {
-    if (result.error) return;
-    if (!result.usage) return;
+    if (!result.error && !result.usage) return;
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SERVICE_KEY) return;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    // Failed calls are logged too (zero tokens, error fields set) so degraded
+    // AI service shows up in admin usage views instead of only in user reports.
     await admin.from("ai_usage_events").insert({
       user_id: opts.userId ?? null,
       task_key: opts.taskKey,
       provider: result.provider,
       model: result.model,
-      input_tokens: result.usage.input_tokens ?? 0,
-      output_tokens: result.usage.output_tokens ?? 0,
-      cache_read_input_tokens: result.usage.cache_read_input_tokens ?? 0,
-      cache_creation_input_tokens: result.usage.cache_creation_input_tokens ?? 0,
+      input_tokens: result.usage?.input_tokens ?? 0,
+      output_tokens: result.usage?.output_tokens ?? 0,
+      cache_read_input_tokens: result.usage?.cache_read_input_tokens ?? 0,
+      cache_creation_input_tokens: result.usage?.cache_creation_input_tokens ?? 0,
       cost_usd: estimateCostUsd(result.model, result.usage),
+      ...(result.error ? { error_status: result.error.status, error_message: result.error.message.slice(0, 500) } : {}),
     });
   } catch (e) {
     console.warn("[ai-dispatch] logUsage failed:", e);
@@ -173,6 +175,9 @@ export async function chatCompletion(opts: ChatOptions): Promise<ChatResult> {
   const result = cfg.provider === "anthropic"
     ? await callAnthropic(cfg, opts)
     : await callGateway(cfg, opts);
+  if (result.error) {
+    console.error(`[ai-dispatch] ${opts.taskKey} failed — provider=${result.provider} model=${result.model} status=${result.error.status}: ${result.error.message.slice(0, 300)}`);
+  }
   // Fire and forget — don't block caller on logging.
   logUsage(opts, result);
   return result;
@@ -228,10 +233,23 @@ async function callAnthropic(cfg: ModelConfig, opts: ChatOptions): Promise<ChatR
       error: { status: 500, message: "ANTHROPIC_API_KEY not configured" } };
   }
 
-  // Anthropic uses a separate `system` parameter; messages must alternate user/assistant.
-  const messages = opts.messages
-    .filter((m) => m.role === "user" || m.role === "assistant")
+  // Anthropic uses a separate `system` parameter, and the Messages API requires
+  // the FIRST message to be role "user". Callers that window their history
+  // (e.g. echo-chat's last-20 slice) can hand us a list that starts with an
+  // assistant message — that 400s on every call and, because the caller keeps
+  // resuming the same session, permanently breaks the conversation. Normalize:
+  // merge consecutive same-role messages, then drop any leading assistant turn.
+  const filtered = opts.messages
+    .filter((m) => (m.role === "user" || m.role === "assistant") && m.content?.trim())
     .map((m) => ({ role: m.role, content: m.content }));
+  const merged: { role: "user" | "assistant"; content: string }[] = [];
+  for (const m of filtered) {
+    const last = merged[merged.length - 1];
+    if (last && last.role === m.role) last.content += `\n\n${m.content}`;
+    else merged.push({ role: m.role as "user" | "assistant", content: m.content });
+  }
+  while (merged.length > 0 && merged[0].role === "assistant") merged.shift();
+  const messages = merged;
   if (messages.length === 0) {
     return { content: "", provider: "anthropic", model: cfg.model,
       error: { status: 400, message: "No user/assistant messages provided" } };
