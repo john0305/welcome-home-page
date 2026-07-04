@@ -175,6 +175,8 @@ export type Database = {
           cache_read_input_tokens: number
           cost_usd: number
           created_at: string
+          error_message: string | null
+          error_status: number | null
           id: string
           input_tokens: number
           model: string
@@ -189,6 +191,8 @@ export type Database = {
           cache_read_input_tokens?: number
           cost_usd?: number
           created_at?: string
+          error_message?: string | null
+          error_status?: number | null
           id?: string
           input_tokens?: number
           model: string
@@ -203,6 +207,8 @@ export type Database = {
           cache_read_input_tokens?: number
           cost_usd?: number
           created_at?: string
+          error_message?: string | null
+          error_status?: number | null
           id?: string
           input_tokens?: number
           model?: string
@@ -3722,6 +3728,60 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      trend_lifecycles: {
+        Row: {
+          applied_at: string
+          created_at: string
+          expected_end_at: string
+          fix_action_id: string | null
+          id: string
+          label: string | null
+          listing_id: string | null
+          resolved_at: string | null
+          resurfaced_at: string | null
+          review_action_id: string | null
+          status: string
+          trend_key: string
+          updated_at: string
+          user_id: string
+          version_id: string | null
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          expected_end_at: string
+          fix_action_id?: string | null
+          id?: string
+          label?: string | null
+          listing_id?: string | null
+          resolved_at?: string | null
+          resurfaced_at?: string | null
+          review_action_id?: string | null
+          status?: string
+          trend_key: string
+          updated_at?: string
+          user_id: string
+          version_id?: string | null
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          expected_end_at?: string
+          fix_action_id?: string | null
+          id?: string
+          label?: string | null
+          listing_id?: string | null
+          resolved_at?: string | null
+          resurfaced_at?: string | null
+          review_action_id?: string | null
+          status?: string
+          trend_key?: string
+          updated_at?: string
+          user_id?: string
+          version_id?: string | null
         }
         Relationships: []
       }
